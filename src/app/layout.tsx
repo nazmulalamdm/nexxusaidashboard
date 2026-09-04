@@ -19,11 +19,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-slate-50 dark:bg-[#161822] text-slate-900 dark:text-slate-100 antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <div className="min-h-screen flex">
+            {/* ফিক্সড সাইডবার */}
             <Sidebar />
-            <div className="flex-1 ml-64 flex flex-col min-h-screen">
+
+            {/* মূল কনটেন্ট এরিয়া - ml-64 সরানো হয়েছে */}
+            <div className="flex-1 flex flex-col min-w-0 min-h-screen">
               <Topbar />
               <main className="flex-1">{children}</main>
             </div>

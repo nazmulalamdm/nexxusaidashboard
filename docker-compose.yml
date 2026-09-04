@@ -1,11 +1,26 @@
+version: "3.8"
+
 services:
-  nexus-dashboard:
+  nexus-ai-dashboard:
+    container_name: nexus_ai_dashboard
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: nexus-ai-dashboard
-    restart: always
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - PORT=3000
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) process.exit(1)})\";"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - nexus-network
+
+networks:
+  nexus-network:
+    driver: bridge

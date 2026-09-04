@@ -5,10 +5,21 @@
 @theme {
   --color-brand-500: #7367f0;
   --color-brand-600: #655bd3;
+
+  /* ফন্ট সাইজ স্কেল */
+  --font-size-xs: 13px;
+  --font-size-sm: 14px;
+  --font-size-base: 15px;
 }
 
 @layer base {
+  html {
+    font-size: 13px; /* রুট স্কেল ১৩ পিক্সেল */
+  }
+
   body {
+    font-size: var(--font-size-xs); /* ডিফল্ট বডি টেক্সট ১৩ পিক্সেল */
+    line-height: 1.5;
     background-color: #f8f7fa;
     color: #5d596c;
     letter-spacing: -0.01em;
