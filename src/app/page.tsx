@@ -94,37 +94,41 @@ export default function OverviewPage() {
   const textStroke = isDark ? "#94a3b8" : "#64748b";
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 max-w-[1600px] mx-auto select-none">
-      {/* Top Banner: Fleet Pulse */}
-      <div className="rounded-xl bg-gradient-to-r from-[#7367f0]/15 via-slate-50 to-white dark:via-[#272b40] dark:to-[#272b40] border border-slate-200 dark:border-slate-700/80 p-4 lg:p-5 shadow-xs transition-colors">
+    <div className="space-y-4 max-w-[1600px] mx-auto select-none">
+      {/* Top Banner: Fleet Pulse with Responsive Text Wrapping */}
+      <div className="rounded-xl bg-gradient-to-r from-[#7367f0]/15 via-slate-50 to-white dark:via-[#272b40] dark:to-[#272b40] border border-slate-200 dark:border-slate-700/80 p-3.5 sm:p-5 shadow-xs transition-colors">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-[11px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                Fleet Orchestrator Active
-              </span>
-              <span className="text-slate-400 dark:text-slate-500 text-xs">•</span>
-              <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+          <div className="space-y-1.5 min-w-0">
+            {/* Badges Cluster */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <span className="text-[10px] sm:text-[11px] font-mono font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider whitespace-nowrap">
+                  Fleet Orchestrator Active
+                </span>
+              </div>
+              <span className="text-slate-400 dark:text-slate-500 text-xs hidden sm:inline">•</span>
+              <span className="text-[10px] sm:text-[11px] font-mono text-slate-500 dark:text-slate-400 whitespace-nowrap">
                 Region: us-east-1 (N. Virginia)
               </span>
             </div>
-            <h1 className="text-base font-semibold text-slate-900 dark:text-slate-100 tracking-tight">
+
+            <h1 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
               Nexus Compute Fabric & Edge Gateway
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               Autonomous workload scheduling, multi-region GPU routing, and tenant quota ingestion
             </p>
           </div>
 
-          <div className="flex items-center gap-2 font-mono text-xs">
-            <div className="px-3 py-1.5 rounded-md bg-white dark:bg-[#1f2233] border border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 flex items-center gap-2 shadow-xs">
+          <div className="flex items-center gap-2 font-mono text-xs pt-1 sm:pt-0 shrink-0">
+            <div className="px-2.5 sm:px-3 py-1.5 rounded-md bg-white dark:bg-[#1f2233] border border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-200 flex items-center gap-1.5 sm:gap-2 shadow-xs text-[11px] sm:text-xs">
               <Server className="w-3.5 h-3.5 text-[#7367f0]" />
               <span>128 / 128 Online</span>
             </div>
             <a
               href="/orders"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#7367f0] hover:bg-[#685dd8] text-white rounded-md font-medium transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#7367f0] hover:bg-[#685dd8] text-white rounded-md font-medium transition-all shadow-xs text-xs"
             >
               <span>Deploy</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -135,7 +139,7 @@ export default function OverviewPage() {
 
       {/* 4 Core KPI Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-4 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs transition-colors">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs transition-colors">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
             <span>24h Token Velocity</span>
             <Zap className="w-3.5 h-3.5 text-[#7367f0]" />
@@ -149,7 +153,7 @@ export default function OverviewPage() {
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs transition-colors">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs transition-colors">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
             <span>Aggregated Burn (MTD)</span>
             <Activity className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
@@ -162,7 +166,7 @@ export default function OverviewPage() {
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs transition-colors">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs transition-colors">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
             <span>P95 Edge Latency</span>
             <Clock className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
@@ -175,7 +179,7 @@ export default function OverviewPage() {
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs transition-colors">
+        <div className="p-3.5 sm:p-4 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs transition-colors">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
             <span>Multi-Tenant Fleet</span>
             <ShieldCheck className="w-3.5 h-3.5 text-[#7367f0]" />
@@ -191,8 +195,8 @@ export default function OverviewPage() {
 
       {/* Dual Analytics Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Main Chart with Theme-Adaptive Colors */}
-        <div className="lg:col-span-2 bg-white dark:bg-[#272b40] p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-xs transition-colors">
+        {/* Main Chart */}
+        <div className="lg:col-span-2 bg-white dark:bg-[#272b40] p-3.5 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-xs transition-colors">
           <div className="flex items-center justify-between mb-3">
             <div>
               <h2 className="text-xs font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
@@ -202,12 +206,12 @@ export default function OverviewPage() {
                 Rolling 24-hour aggregate token pipeline across edge clusters
               </p>
             </div>
-            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded font-medium">
+            <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded font-medium shrink-0">
               Real-time Ingestion
             </span>
           </div>
 
-          <div className="h-56 w-full">
+          <div className="h-52 sm:h-56 w-full">
             {mounted ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
@@ -273,7 +277,7 @@ export default function OverviewPage() {
         </div>
 
         {/* Model Workload Allocation */}
-        <div className="bg-white dark:bg-[#272b40] p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-xs flex flex-col justify-between transition-colors">
+        <div className="bg-white dark:bg-[#272b40] p-3.5 sm:p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-xs flex flex-col justify-between transition-colors">
           <div>
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-xs font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
@@ -307,7 +311,7 @@ export default function OverviewPage() {
             </div>
           </div>
 
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-700/80 flex items-center justify-between text-xs">
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-700/80 flex items-center justify-between text-xs mt-4">
             <span className="text-slate-500 dark:text-slate-400">Dominant: Claude 3.5</span>
             <a
               href="/clients"
@@ -320,7 +324,7 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      {/* Live Node Operations Table */}
+      {/* Live Node Operations Table (Smooth Horizontal Scroll on Mobile) */}
       <div className="bg-white dark:bg-[#272b40] rounded-xl border border-slate-200 dark:border-slate-700/80 overflow-hidden shadow-xs transition-colors">
         <div className="p-3 border-b border-slate-200 dark:border-slate-700/80 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -335,7 +339,7 @@ export default function OverviewPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="text-[11px] font-semibold uppercase tracking-wider bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
                 <th className="py-2.5 px-4">Worker Pod</th>
