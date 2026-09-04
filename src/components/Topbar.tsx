@@ -141,7 +141,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
 
             <div className="hidden sm:flex flex-col text-left">
               <span className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-tight">
-                Tanvir Ahmed
+                Alex Morgan
               </span>
               <span className="text-[10px] text-slate-400 font-mono">
                 Founder & CEO
