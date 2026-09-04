@@ -11,6 +11,7 @@ import {
   CreditCard,
   Cpu,
   Sparkles,
+  Settings,
 } from "lucide-react";
 
 const navigationItems = [
@@ -38,6 +39,12 @@ const navigationItems = [
     name: "Settlements & Quotas",
     href: "/payments",
     icon: CreditCard,
+  },
+
+  {
+    name: "Security & API Keys", // <--- নতুন পেজের লিংক
+    href: "/settings",
+    icon: Settings,
   },
 ];
 
