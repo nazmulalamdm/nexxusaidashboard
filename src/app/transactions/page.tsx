@@ -2,230 +2,252 @@
 
 import React, { useState } from "react";
 import {
-  Search,
+  Coins,
+  ArrowDownLeft,
+  ArrowUpRight,
   Filter,
   Download,
-  Terminal,
-  Clock,
-  Zap,
+  Search,
   CheckCircle2,
-  AlertTriangle,
+  Clock,
+  Layers,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
-interface TokenLedgerEntry {
-  id: string;
-  timestamp: string;
-  model: string;
-  promptTokens: number;
-  completionTokens: number;
-  latencyMs: number;
-  status: 200 | 429 | 500;
-  cost: string;
-}
-
-const ledgerMockData: TokenLedgerEntry[] = [
+const tokenTransactions = [
   {
-    id: "req_88a9f12c",
-    timestamp: "10:58:12.410",
-    model: "claude-3-5-sonnet",
-    promptTokens: 1420,
-    completionTokens: 382,
-    latencyMs: 480,
-    status: 200,
-    cost: "$0.0099",
+    id: "tx_9018bf",
+    tenant: "Cognitive Studio",
+    modelCluster: "Claude 3.5 Sonnet",
+    type: "Ingestion Burn",
+    tokens: "4.82M",
+    cost: "$14.46",
+    timestamp: "10:58:32 UTC",
+    status: "Settled",
   },
   {
-    id: "req_77c4d31e",
-    timestamp: "10:57:45.102",
-    model: "gpt-4o-mini",
-    promptTokens: 890,
-    completionTokens: 154,
-    latencyMs: 195,
-    status: 200,
-    cost: "$0.0002",
+    id: "tx_8812ca",
+    tenant: "OpenAI Dev Lab",
+    modelCluster: "GPT-4o Dedicated",
+    type: "Quota Pre-pay",
+    tokens: "25.00M",
+    cost: "$75.00",
+    timestamp: "10:54:15 UTC",
+    status: "Settled",
   },
   {
-    id: "req_99b2e04a",
-    timestamp: "10:56:19.824",
-    model: "deepseek-r1",
-    promptTokens: 3200,
-    completionTokens: 810,
-    latencyMs: 820,
-    status: 200,
-    cost: "$0.0041",
+    id: "tx_7741ef",
+    tenant: "NeuroFlow SaaS",
+    modelCluster: "DeepSeek R1 Mesh",
+    type: "Burst Compute",
+    tokens: "1.25M",
+    cost: "$2.50",
+    timestamp: "10:50:02 UTC",
+    status: "Processing",
   },
   {
-    id: "req_12f8e99b",
-    timestamp: "10:55:03.015",
-    model: "llama-3.1-70b",
-    promptTokens: 412,
-    completionTokens: 0,
-    latencyMs: 42,
-    status: 429,
-    cost: "$0.0000",
+    id: "tx_6650da",
+    tenant: "Synthetix Media",
+    modelCluster: "SDXL Ingestion",
+    type: "Ingestion Burn",
+    tokens: "850K",
+    cost: "$6.80",
+    timestamp: "10:45:19 UTC",
+    status: "Settled",
   },
   {
-    id: "req_55d1c87f",
-    timestamp: "10:54:22.671",
-    model: "gpt-4o",
-    promptTokens: 2150,
-    completionTokens: 940,
-    latencyMs: 640,
-    status: 200,
-    cost: "$0.0201",
+    id: "tx_5549ac",
+    tenant: "HyperScale Corp",
+    modelCluster: "Llama 3.1 70B",
+    type: "Over-Quota Egress",
+    tokens: "3.10M",
+    cost: "$9.30",
+    timestamp: "10:39:40 UTC",
+    status: "Settled",
+  },
+  {
+    id: "tx_4418fa",
+    tenant: "AutoAgent Systems",
+    modelCluster: "Mistral Large 2",
+    type: "Ingestion Burn",
+    tokens: "920K",
+    cost: "$2.76",
+    timestamp: "10:32:11 UTC",
+    status: "Settled",
   },
 ];
 
-export default function TransactionsPage() {
-  const [filterModel, setFilterModel] = useState("all");
+export default function TokenTelemetryPage() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredData = ledgerMockData.filter((entry) => {
-    const matchesSearch =
-      entry.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.model.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesModel =
-      filterModel === "all" || entry.model.includes(filterModel);
-    return matchesSearch && matchesModel;
-  });
+  const filteredData = tokenTransactions.filter(
+    (tx) =>
+      tx.tenant.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tx.modelCluster.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tx.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="p-4 sm:p-6 space-y-4">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+    <div className="space-y-4 max-w-[1600px] mx-auto select-none pt-1">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#272b40] p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-xs">
         <div>
-          <h1 className="text-base font-semibold text-slate-800 dark:text-slate-100 tracking-tight">
-            Token Ledger & Gateway Telemetry
+          <h1 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+            Token Ingestion & Telemetry Settlements
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Immutable log of all inferred model calls, egress compute units, and execution latencies
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Real-time multi-tenant token deductions, compute cost allocation, and ledger audit
           </p>
         </div>
+        <button className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#7367f0] hover:bg-[#685dd8] text-white rounded-md text-xs font-medium transition-all self-start sm:self-auto shadow-xs">
+          <Download className="w-3.5 h-3.5" />
+          <span>Export Ledger</span>
+        </button>
+      </div>
 
-        <div className="flex items-center gap-2">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 shadow-xs">
-            <Download className="w-3.5 h-3.5 text-slate-400" />
-            <span>Export JSONL</span>
+      {/* 3 Telemetry Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="p-3.5 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+            <span>24h Ingestion Burn</span>
+            <Coins className="w-3.5 h-3.5 text-[#7367f0]" />
+          </div>
+          <div className="text-lg font-bold font-mono text-slate-900 dark:text-slate-100">
+            35.94M <span className="text-xs font-normal text-slate-400">Tokens</span>
+          </div>
+          <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">
+            Directly mapped to compute pods
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+            <span>Settled Ledger Value</span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
+          </div>
+          <div className="text-lg font-bold font-mono text-slate-900 dark:text-slate-100">
+            $110.82
+          </div>
+          <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+            Rolling hourly aggregate
+          </div>
+        </div>
+
+        <div className="p-3.5 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+            <span>Mesh Pipeline Quota</span>
+            <Layers className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
+          </div>
+          <div className="text-lg font-bold font-mono text-slate-900 dark:text-slate-100">
+            88.4% <span className="text-xs font-normal text-slate-400">Healthy</span>
+          </div>
+          <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">
+            Zero dropouts across 128 pods
+          </div>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search transaction ID, tenant, or model..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-[#7367f0]"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 self-end sm:self-auto text-xs">
+          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-600 dark:text-slate-300">
+            <Filter className="w-3 h-3 text-[#7367f0]" />
+            <span>Filter Type</span>
           </button>
         </div>
       </div>
 
-      {/* Control Strip */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search request ID or model..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 pr-3 py-1.5 rounded-md text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-brand-500 w-full sm:w-64"
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <select
-            value={filterModel}
-            onChange={(e) => setFilterModel(e.target.value)}
-            className="px-2.5 py-1.5 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-600 dark:text-slate-300 focus:outline-none"
-          >
-            <option value="all">All Architectural Stacks</option>
-            <option value="claude">Anthropic Claude</option>
-            <option value="gpt">OpenAI Models</option>
-            <option value="deepseek">DeepSeek Mesh</option>
-            <option value="llama">Meta Llama</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Main Ledger Table */}
-      <div className="bg-white dark:bg-[#1f2233] rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden shadow-xs">
+      {/* Distinct Token Transaction Ledger Table */}
+      <div className="bg-white dark:bg-[#272b40] rounded-xl border border-slate-200 dark:border-slate-700/80 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
-              <tr className="text-[11px] font-semibold uppercase tracking-wider bg-slate-50 dark:bg-slate-900/60 text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                <th className="py-2.5 px-4">Request Log ID</th>
-                <th className="py-2.5 px-4">Timestamp (UTC)</th>
-                <th className="py-2.5 px-4">Endpoint Stack</th>
-                <th className="py-2.5 px-4 text-right">In / Out Tokens</th>
-                <th className="py-2.5 px-4 text-right">TTFT Latency</th>
-                <th className="py-2.5 px-4 text-center">Status</th>
-                <th className="py-2.5 px-4 text-right">Subtotal</th>
+              <tr className="text-[11px] font-semibold uppercase tracking-wider bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
+                <th className="py-2.5 px-4">Ledger ID</th>
+                <th className="py-2.5 px-4">Organization / Tenant</th>
+                <th className="py-2.5 px-4">Serving Architecture</th>
+                <th className="py-2.5 px-4">Type</th>
+                <th className="py-2.5 px-4 text-right">Tokens Consumed</th>
+                <th className="py-2.5 px-4 text-right">Cost (MTD)</th>
+                <th className="py-2.5 px-4 text-center">Settlement</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs text-slate-600 dark:text-slate-300">
-              {filteredData.map((entry) => {
-                const isSuccess = entry.status === 200;
-                return (
-                  <tr
-                    key={entry.id}
-                    className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition-colors"
-                  >
-                    <td className="py-2.5 px-4 font-mono text-[11px] font-medium text-brand-500">
-                      {entry.id}
-                    </td>
-                    <td className="py-2.5 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        <span>{entry.timestamp}</span>
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-4">
-                      <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/60">
-                        {entry.model}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-4 text-right font-mono text-[11px]">
-                      <span className="text-slate-400">{entry.promptTokens}</span>
-                      <span className="text-slate-300 dark:text-slate-600 mx-1">/</span>
-                      <span className="text-indigo-600 dark:text-indigo-400 font-medium">
-                        {entry.completionTokens}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-4 text-right font-mono text-[11px]">
-                      <span
-                        className={
-                          entry.latencyMs < 300
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-amber-600 dark:text-amber-400"
-                        }
-                      >
-                        {entry.latencyMs}ms
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-4 text-center">
-                      <span
-                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-semibold border ${
-                          isSuccess
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                            : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                        }`}
-                      >
-                        {isSuccess ? (
-                          <CheckCircle2 className="w-2.5 h-2.5" />
-                        ) : (
-                          <AlertTriangle className="w-2.5 h-2.5" />
-                        )}
-                        {entry.status}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-4 text-right font-mono text-xs font-semibold text-slate-800 dark:text-slate-200">
-                      {entry.cost}
-                    </td>
-                  </tr>
-                );
-              })}
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60 text-xs text-slate-600 dark:text-slate-300">
+              {filteredData.map((item) => (
+                <tr
+                  key={item.id}
+                  className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+                >
+                  <td className="py-2.5 px-4 font-mono text-[11px] font-medium text-[#7367f0]">
+                    {item.id}
+                  </td>
+                  <td className="py-2.5 px-4 font-medium text-slate-800 dark:text-slate-200">
+                    {item.tenant}
+                  </td>
+                  <td className="py-2.5 px-4 font-mono text-[11px] text-slate-600 dark:text-slate-300">
+                    {item.modelCluster}
+                  </td>
+                  <td className="py-2.5 px-4">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                      {item.type.includes("Burn") ? (
+                        <ArrowDownLeft className="w-3 h-3 text-amber-500" />
+                      ) : (
+                        <ArrowUpRight className="w-3 h-3 text-emerald-500" />
+                      )}
+                      {item.type}
+                    </span>
+                  </td>
+                  <td className="py-2.5 px-4 text-right font-mono text-[11px] text-slate-800 dark:text-slate-200 font-semibold">
+                    {item.tokens}
+                  </td>
+                  <td className="py-2.5 px-4 text-right font-mono text-[11px] text-slate-800 dark:text-slate-200 font-bold">
+                    {item.cost}
+                  </td>
+                  <td className="py-2.5 px-4 text-center">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium border ${
+                        item.status === "Settled"
+                          ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20"
+                          : "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20"
+                      }`}
+                    >
+                      {item.status === "Settled" ? (
+                        <CheckCircle2 className="w-2.5 h-2.5" />
+                      ) : (
+                        <Clock className="w-2.5 h-2.5 animate-pulse" />
+                      )}
+                      {item.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
 
-        {/* Footer */}
-        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/30 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs text-slate-400 font-mono">
-          <div className="flex items-center gap-2">
-            <Zap className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Zero Egress Dropped</span>
+        {/* Distinct Pagination Footer */}
+        <div className="p-3 border-t border-slate-200 dark:border-slate-700/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+          <span className="font-mono text-[11px]">Showing 1 to 6 of 84 ledger entries</span>
+          <div className="flex items-center gap-1">
+            <button className="p-1 rounded border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40">
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <button className="p-1 rounded border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800">
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
-          <span>Showing {filteredData.length} records</span>
         </div>
       </div>
     </div>

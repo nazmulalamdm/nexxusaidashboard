@@ -22,7 +22,7 @@ interface SidebarProps {
 
 const navigationItems = [
   { name: "Analytics Hub", href: "/", icon: LayoutDashboard },
-  { name: "AI Clients & Mesh", href: "/clients", icon: Users },
+  { name: "Gateway Traffic", href: "/clients", icon: Users },
   { name: "Model Provisioning", href: "/orders", icon: Server },
   { name: "Token Telemetry", href: "/transactions", icon: Activity },
   { name: "Settlements & Quotas", href: "/payments", icon: CreditCard },
