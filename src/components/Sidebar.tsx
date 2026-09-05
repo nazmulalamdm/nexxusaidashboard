@@ -15,7 +15,8 @@ import {
   Cpu,
   Calculator,
   Bot,
-  Terminal
+  Terminal,
+  Key
 } from "lucide-react";
 
 interface SidebarProps {
@@ -27,6 +28,7 @@ const navigationItems = [
   { name: "Analytics Hub", href: "/", icon: LayoutDashboard },
   { name: "AI Playground", href: "/playground", icon: Bot },
   { name: "Prompt Registry", href: "/prompts", icon: Terminal },
+  { name: "API Key Vault", href: "/keys", icon: Key },
   { name: "Gateway Traffic", href: "/clients", icon: Users },
   { name: "Model Provisioning", href: "/orders", icon: Server },
   { name: "Token Telemetry", href: "/transactions", icon: Activity },
