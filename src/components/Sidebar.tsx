@@ -58,9 +58,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                   PRO
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 font-mono">
-                Enterprise Mesh
-              </p>
+              
             </div>
           </Link>
 
