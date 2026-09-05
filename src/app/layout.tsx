@@ -3,8 +3,8 @@ import { ThemeProvider } from "next-themes";
 import DashboardLayout from "@/components/DashboardLayout";
 
 export const metadata = {
-  title: "NexusAI - Enterprise Mesh & Inference Orchestrator",
-  description: "Production-grade AI SaaS Admin Dashboard",
+title: 'TecknowPointAI - AI Infrastructure & Gateway Telemetry Dashboard',
+description: 'Next.js AI Gateway and Token Telemetry Dashboard Template',
 };
 
 export default function RootLayout({
