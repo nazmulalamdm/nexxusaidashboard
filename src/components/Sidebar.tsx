@@ -13,7 +13,8 @@ import {
   Sparkles,
   X,
   Cpu,
-  Calculator
+  Calculator,
+  Bot
 } from "lucide-react";
 
 interface SidebarProps {
@@ -23,6 +24,7 @@ interface SidebarProps {
 
 const navigationItems = [
   { name: "Analytics Hub", href: "/", icon: LayoutDashboard },
+  { name: "AI Playground", href: "/playground", icon: Bot },
   { name: "Gateway Traffic", href: "/clients", icon: Users },
   { name: "Model Provisioning", href: "/orders", icon: Server },
   { name: "Token Telemetry", href: "/transactions", icon: Activity },
