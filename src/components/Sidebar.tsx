@@ -52,7 +52,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm text-slate-900 dark:text-slate-100 tracking-tight">
-                  TecknowPointAI
+                  TechknowPointAI
                 </span>
                 <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-[#7367f0]/20 text-[#7367f0] border border-[#7367f0]/30 font-semibold">
                   PRO

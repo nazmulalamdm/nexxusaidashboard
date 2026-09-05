@@ -3,7 +3,7 @@ import { ThemeProvider } from "next-themes";
 import DashboardLayout from "@/components/DashboardLayout";
 
 export const metadata = {
-title: 'TecknowPointAI - AI Infrastructure & Gateway Telemetry Dashboard',
+title: 'TechknowPointAI - AI Infrastructure & Gateway Telemetry Dashboard',
 description: 'Next.js AI Gateway and Token Telemetry Dashboard Template',
 };
 
