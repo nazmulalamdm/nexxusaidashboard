@@ -1,242 +1,555 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NexusAI - Next.js 15 AI Dashboard Documentation</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Documentation | TecknowPoint - Next.js AI Infrastructure Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0b0f19;
-      --card: #111827;
-      --border: #1f2937;
-      --primary: #6366f1;
-      --accent: #38bdf8;
-      --text: #f3f4f6;
-      --muted: #9ca3af;
-      --code-bg: #030712;
-      --tag-bg: rgba(99, 102, 241, 0.15);
+      --bg: #090d16;
+      --sidebar-bg: #0d121f;
+      --card-bg: #111726;
+      --border: #1e293b;
+      --accent: #7367f0;
+      --accent-hover: #5e50ee;
+      --accent-light: rgba(115, 103, 240, 0.12);
+      --text: #94a3b8;
+      --text-heading: #f8fafc;
+      --code-bg: #0f172a;
+      --sidebar-width: 280px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
       color: var(--text);
-      line-height: 1.6;
-      padding: 40px 20px;
+      line-height: 1.7;
+      display: flex;
+      min-height: 100vh;
     }
-    .container { max-width: 960px; margin: 0 auto; }
+
+    /* Sidebar Navigation */
+    aside {
+      width: var(--sidebar-width);
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      padding: 32px 24px;
+      overflow-y: auto;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 36px;
+      text-decoration: none;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), #9055fd);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .brand-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-heading);
+    }
+
+    .nav-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .nav-list {
+      list-style: none;
+      margin-bottom: 28px;
+    }
+
+    .nav-item {
+      margin-bottom: 4px;
+    }
+
+    .nav-link {
+      display: block;
+      padding: 8px 12px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    /* Main Content */
+    main {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      padding: 48px 56px;
+      max-width: 1040px;
+    }
+
     header {
       border-bottom: 1px solid var(--border);
-      padding-bottom: 24px;
-      margin-bottom: 36px;
+      padding-bottom: 32px;
+      margin-bottom: 48px;
     }
-    .badge {
-      display: inline-block;
-      background: var(--tag-bg);
-      color: #a5b4fc;
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      padding: 4px 12px;
-      border-radius: 9999px;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-heading);
+      letter-spacing: -0.02em;
       margin-bottom: 12px;
     }
-    h1 { font-size: 30px; font-weight: 700; color: #fff; margin-bottom: 8px; }
-    h2 { font-size: 20px; font-weight: 600; color: #fff; margin: 36px 0 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-    h3 { font-size: 16px; font-weight: 600; color: #e5e7eb; margin: 20px 0 10px; }
-    p { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
-    ul, ol { padding-left: 20px; margin-bottom: 16px; }
-    li { color: var(--muted); font-size: 14px; margin-bottom: 6px; }
+
+    .meta-badges {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-top: 16px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      background: var(--accent-light);
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .badge-gray {
+      background: #1e293b;
+      color: #cbd5e1;
+    }
+
+    section {
+      margin-bottom: 56px;
+      scroll-margin-top: 40px;
+    }
+
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-heading);
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-heading);
+      margin: 24px 0 10px;
+    }
+
+    p {
+      margin-bottom: 16px;
+      font-size: 15px;
+    }
+
+    ul, ol {
+      margin-left: 24px;
+      margin-bottom: 20px;
+      font-size: 15px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    strong {
+      color: #f1f5f9;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--code-bg);
+      color: #38bdf8;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 13.5px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
     pre {
       background: var(--code-bg);
       border: 1px solid var(--border);
-      padding: 16px;
       border-radius: 8px;
+      padding: 16px 20px;
       overflow-x: auto;
-      font-family: "JetBrains Mono", Consolas, "Courier New", monospace;
-      font-size: 13px;
-      color: var(--accent);
-      margin: 12px 0 20px;
+      margin: 16px 0 24px;
     }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 24px;
+
+    pre code {
+      background: transparent;
+      padding: 0;
+      border: none;
+      color: #e2e8f0;
+      font-size: 13.5px;
+      line-height: 1.6;
     }
+
+    .callout {
+      background: rgba(115, 103, 240, 0.08);
+      border-left: 4px solid var(--accent);
+      padding: 16px 20px;
+      border-radius: 0 8px 8px 0;
+      margin: 20px 0;
+      font-size: 14.5px;
+    }
+
+    /* Data Table */
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 16px 0 24px;
-      font-size: 13px;
-    }
-    th, td {
+      margin: 20px 0 28px;
+      border-radius: 8px;
+      overflow: hidden;
       border: 1px solid var(--border);
-      padding: 12px 14px;
+    }
+
+    th, td {
+      padding: 12px 16px;
       text-align: left;
+      font-size: 14px;
     }
+
     th {
-      background: #1f2937;
-      color: #fff;
+      background: var(--card-bg);
+      color: var(--text-heading);
       font-weight: 600;
+      border-bottom: 1px solid var(--border);
     }
-    td { background: rgba(17, 24, 39, 0.7); color: var(--muted); }
-    td strong { color: #f3f4f6; }
-    .highlight { color: #a5b4fc; font-weight: 600; }
+
+    td {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      margin-top: 60px;
+      font-size: 13.5px;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    @media (max-width: 900px) {
+      aside {
+        display: none;
+      }
+      main {
+        margin-left: 0;
+        padding: 32px 20px;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="container">
+
+  <!-- Sidebar -->
+  <aside>
+    <a href="#" class="brand">
+      <div class="brand-logo">TP</div>
+      <span class="brand-text">TecknowPoint</span>
+    </a>
+
+    <div class="nav-title">Getting Started</div>
+    <ul class="nav-list">
+      <li class="nav-item"><a href="#introduction" class="nav-link active">1. Introduction</a></li>
+      <li class="nav-item"><a href="#features" class="nav-link">2. Key Features</a></li>
+      <li class="nav-item"><a href="#requirements" class="nav-link">3. System Requirements</a></li>
+      <li class="nav-item"><a href="#installation" class="nav-link">4. Installation & Setup</a></li>
+    </ul>
+
+    <div class="nav-title">Development</div>
+    <ul class="nav-list">
+      <li class="nav-item"><a href="#structure" class="nav-link">5. Directory Structure</a></li>
+      <li class="nav-item"><a href="#production" class="nav-link">6. Production & Docker</a></li>
+      <li class="nav-item"><a href="#customization" class="nav-link">7. Customization Guide</a></li>
+    </ul>
+
+    <div class="nav-title">Resources</div>
+    <ul class="nav-list">
+      <li class="nav-item"><a href="#credits" class="nav-link">8. Credits & Dependencies</a></li>
+      <li class="nav-item"><a href="#support" class="nav-link">9. Support & Changelog</a></li>
+    </ul>
+  </aside>
+
+  <!-- Main Content -->
+  <main>
     <header>
-      <span class="badge">PRODUCTION READY TEMPLATE</span>
-      <h1>NexusAI - Next.js 15 AI Dashboard Documentation</h1>
-      <p>Official technical manual and architecture guide for NexusAI — a high-performance, DevOps-ready Admin Dashboard built with Next.js 15 (App Router), Tailwind CSS, Recharts, and Docker containerization.</p>
+      <h1>TecknowPoint AI Infrastructure Dashboard</h1>
+      <p>A comprehensive Next.js 14/15 Admin & Telemetry Dashboard engineered for LLM Gateway orchestration, token telemetry analytics, and distributed cluster monitoring.</p>
+      
+      <div class="meta-badges">
+        <span class="badge">Version 1.0.0</span>
+        <span class="badge badge-gray">Next.js 15+</span>
+        <span class="badge badge-gray">Tailwind CSS 3.4+</span>
+        <span class="badge badge-gray">TypeScript</span>
+      </div>
     </header>
 
-    <div class="card">
-      <h3 style="color: #fff; margin-top: 0;">Project Tech Stack</h3>
+    <!-- 1. Introduction -->
+    <section id="introduction">
+      <h2>1. Introduction</h2>
+      <p>Thank you for choosing <strong>TecknowPoint AI Infrastructure & Gateway Telemetry Dashboard</strong>. This template is crafted specifically for AI engineers, SaaS founders, and cloud platform architects requiring clean operational monitoring over AI Gateway proxies, token burn, P95 latency spikes, and GPU node clusters.</p>
+      <p>Built completely without heavy bloated UI frameworks, it utilizes clean modular React components, native Tailwind utility architecture, and modern Lucide iconography.</p>
+    </section>
+
+    <!-- 2. Key Features -->
+    <section id="features">
+      <h2>2. Key Features</h2>
       <ul>
-        <li><span class="highlight">Framework:</span> Next.js 15 (App Router, Turbopack, Standalone output)</li>
-        <li><span class="highlight">Language:</span> TypeScript</li>
-        <li><span class="highlight">Styling:</span> Tailwind CSS, PostCSS</li>
-        <li><span class="highlight">Visualizations:</span> Recharts</li>
-        <li><span class="highlight">CI/CD & DevOps:</span> GitHub Actions Workflow, Multi-Stage Dockerfile, Docker Compose</li>
+        <li><strong>Modern Enterprise Stack:</strong> Next.js App Router architecture with strict TypeScript definitions.</li>
+        <li><strong>AI Gateway Telemetry:</strong> Dedicated views for model request dispatching, P95 latency graphs, TTFT (Time To First Token), and stream drop rates.</li>
+        <li><strong>Token Telemetry & Burn Metrics:</strong> Deep monitoring table detailing model routes (GPT-4o, Claude 3.5 Sonnet, Llama-3-70B), token consumption, and cost estimates.</li>
+        <li><strong>Tailwind CSS Theming:</strong> Fully styled with modern dark aesthetics, customized accent color tokens (<code>#7367f0</code>), and CSS variables.</li>
+        <li><strong>Zero Hydration / Console Errors:</strong> Production-tested components guaranteeing 0 console warnings or layout shifts.</li>
+        <li><strong>Container Ready:</strong> Multi-stage <code>Dockerfile</code> and <code>docker-compose.yml</code> ready for instant deployment on Render, AWS, or Railway.</li>
       </ul>
-    </div>
+    </section>
 
-    <h2>1. Project Folder & File Structure</h2>
-    <p>The code is organized logically, separating app routes, reusable UI components, and mock application state:</p>
+    <!-- 3. System Requirements -->
+    <section id="requirements">
+      <h2>3. System Requirements</h2>
+      <ul>
+        <li><strong>Node.js:</strong> Version 18.18.0 or later (Node 20+ LTS strongly recommended).</li>
+        <li><strong>Package Manager:</strong> npm (v9+), yarn, pnpm, or bun.</li>
+        <li><strong>Terminal:</strong> Bash, Zsh, or PowerShell.</li>
+      </ul>
+    </section>
 
-    <pre>D:\nexus-ai-next
-├── .github/
-│   └── workflows/
-│       └── ci.yml              # Automated GitHub Actions build validation pipeline
-├── documentation/
-│   └── index.html              # Self-contained offline documentation (this file)
-├── public/                     # Static assets (images, icons, SVGs)
+    <!-- 4. Installation & Setup -->
+    <section id="installation">
+      <h2>4. Installation & Setup</h2>
+      <p>Follow these steps to run the template locally on your machine:</p>
+
+      <h3>Step 1: Extract Files</h3>
+      <p>Extract the downloaded ZIP package to your desired project directory.</p>
+
+      <h3>Step 2: Install Dependencies</h3>
+      <p>Open your command line in the project folder and execute:</p>
+      <pre><code>npm install</code></pre>
+
+      <h3>Step 3: Environment Setup</h3>
+      <p>Copy the sample environment configuration:</p>
+      <pre><code>cp .env.example .env.local</code></pre>
+
+      <h3>Step 4: Launch Dev Server</h3>
+      <pre><code>npm run dev</code></pre>
+      <p>Open <a href="http://localhost:3000" target="_blank">http://localhost:3000</a> in your web browser to view the live dashboard.</p>
+    </section>
+
+    <!-- 5. Directory Structure -->
+    <section id="structure">
+      <h2>5. Directory Structure</h2>
+      <pre><code>tecknowpoint-ai-dashboard/
+├── .github/                # GitHub workflows & CI setup
+├── documentation/          # Offline documentation package (index.html)
+├── public/                 # Static public assets, SVG icons, badges
 ├── src/
-│   ├── app/
-│   │   ├── clients/
-│   │   │   └── page.tsx        # Client management & CRM view
-│   │   ├── orders/
-│   │   │   └── page.tsx        # Order list & transactional status view
-│   │   ├── payments/
-│   │   │   └── page.tsx        # Payment records & invoice dashboard
-│   │   ├── transactions/
-│   │   │   └── page.tsx        # Detailed audit logs & transactions
-│   │   ├── favicon.ico         # Application icon
-│   │   ├── globals.css         # Global CSS with Tailwind directives & themes
-│   │   ├── layout.tsx          # Root app wrapper (Sidebar, Header, ThemeProvider)
-│   │   └── page.tsx            # Main Analytics Dashboard view
-│   ├── components/
-│   │   ├── AnalyticsChart.tsx  # Recharts responsive data visualizer
-│   │   ├── Sidebar.tsx         # Collapsible desktop & mobile navigation
-│   │   ├── ThemeProvider.tsx   # NextThemes provider context
-│   │   ├── ThemeToggle.tsx     # Light/Dark mode switcher button
-│   │   └── Topbar.tsx          # Header bar with search, status, and profile
-│   └── data/
-│       └── mockData.ts         # Structured mock datasets for cards, tables & metrics
-├── .dockerignore               # Rules to exclude unneeded assets from Docker image
-├── .gitignore                  # Git tracking exclusion list
-├── docker-compose.yml          # Container orchestration service setup
-├── Dockerfile                  # Multi-stage optimized production Docker build
-├── eslint.config.mjs           # ESLint linting configuration
-├── next.config.ts              # Next.js settings (Standalone output enabled)
-├── package.json                # Project dependencies & npm run scripts
-├── postcss.config.mjs          # PostCSS plugin settings
-└── tsconfig.json               # TypeScript path aliases and compiler configuration</pre>
+│   ├── app/                # Next.js App Router root
+│   │   ├── (dashboard)/    # Layout wrappers & primary dashboard routes
+│   │   │   ├── analytics/  # P95 latency, throughput, model traffic
+│   │   │   ├── clients/    # Active gateway client keys & token limits
+│   │   │   ├── quotas/     # Quota management & tier throttling
+│   │   │   └── telemetry/  # Deep token consumption & cost analytics
+│   │   ├── globals.css     # Tailwind imports and root variable palettes
+│   │   └── layout.tsx      # Root layout shell
+│   ├── components/         # Clean modular UI blocks (Cards, Tables, Charts)
+│   └── lib/                # Telemetry helper generators and formatting utils
+├── .env.example            # Environment variables placeholder
+├── Dockerfile              # Production multi-stage Docker build config
+├── docker-compose.yml      # Local container orchestration
+├── package.json            # Scripts, dependencies, and metadata
+├── tailwind.config.ts      # Custom Tailwind styling tokens
+└── tsconfig.json           # Strict TypeScript configuration</code></pre>
+    </section>
 
-    <h2>2. Key Files & Architecture Reference</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Path</th>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><code>src/app/page.tsx</code></td>
-          <td>Core Page</td>
-          <td>Primary operational dashboard displaying metric cards and AI usage charts.</td>
-        </tr>
-        <tr>
-          <td><code>src/app/clients/page.tsx</code></td>
-          <td>Sub-page</td>
-          <td>Client database table with activity logs and status tags.</td>
-        </tr>
-        <tr>
-          <td><code>src/app/orders/page.tsx</code></td>
-          <td>Sub-page</td>
-          <td>List of API credit packages and orders placed by users.</td>
-        </tr>
-        <tr>
-          <td><code>src/app/payments/page.tsx</code></td>
-          <td>Sub-page</td>
-          <td>Payment collection records with filtering capabilities.</td>
-        </tr>
-        <tr>
-          <td><code>src/app/transactions/page.tsx</code></td>
-          <td>Sub-page</td>
-          <td>Real-time transaction history and LLM token usage tracking.</td>
-        </tr>
-        <tr>
-          <td><code>src/components/AnalyticsChart.tsx</code></td>
-          <td>Component</td>
-          <td>Dynamic, responsive charts powered by Recharts.</td>
-        </tr>
-        <tr>
-          <td><code>src/data/mockData.ts</code></td>
-          <td>Data Store</td>
-          <td>Cleanly typed mock data array; easy to substitute with a REST or GraphQL API.</td>
-        </tr>
-        <tr>
-          <td><code>Dockerfile</code></td>
-          <td>DevOps</td>
-          <td>3-stage Docker setup (deps, builder, runner) for minimal production footprint.</td>
-        </tr>
-        <tr>
-          <td><code>.github/workflows/ci.yml</code></td>
-          <td>DevOps</td>
-          <td>Continuous Integration pipeline that tests <code>npm run build</code> on every push.</td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- 6. Production & Docker -->
+    <section id="production">
+      <h2>6. Production & Docker</h2>
+      <h3>Standard Production Build</h3>
+      <p>To compile optimized production assets:</p>
+      <pre><code>npm run build
+npm run start</code></pre>
 
-    <h2>3. Getting Started (Development Setup)</h2>
-    <p>Ensure you have <strong>Node.js 20+</strong> installed on your system.</p>
-    <pre># 1. Open your terminal in the source code folder
-cd source-code
+      <h3>Docker Deployment</h3>
+      <p>Build and run the standalone container with Docker:</p>
+      <pre><code># Build the Docker image
+docker build -t tecknowpoint-ai-dashboard .
 
-# 2. Install dependencies cleanly
-npm install
+# Run container on port 3000
+docker run -d -p 3000:3000 --name ai-dashboard tecknowpoint-ai-dashboard</code></pre>
+    </section>
 
-# 3. Launch development server
-npm run dev</pre>
-    <p>Navigate to <code>http://localhost:3000</code> in your browser to view the application.</p>
+    <!-- 7. Customization Guide -->
+    <section id="customization">
+      <h2>7. Customization Guide</h2>
+      <h3>Changing Accent Colors</h3>
+      <p>Open <code>tailwind.config.ts</code> to adjust the core brand accents. Replace the purple accent with your corporate branding:</p>
+      <pre><code>// tailwind.config.ts
+theme: {
+  extend: {
+    colors: {
+      brand: {
+        500: '#7367f0', // Change this hex code to your preferred color
+        600: '#5e50ee',
+      }
+    }
+  }
+}</code></pre>
 
-    <h2>4. Docker Container Deployment</h2>
-    <p>Deploy the application in an isolated production environment using Docker Compose:</p>
-    <pre># Build the image and start the container
-docker compose up -d --build
+      <h3>Updating Logo & Brand Name</h3>
+      <p>To update the dashboard title and initials, navigate to <code>src/components/layout/Sidebar.tsx</code> and modify the brand banner and typography.</p>
+    </section>
 
-# Inspect execution logs
-docker compose logs -f
+    <!-- 8. Credits & Dependencies -->
+    <section id="credits">
+      <h2>8. Credits & Dependencies</h2>
+      <p>This project is built on top of high-quality open-source software libraries. All third-party tools are used in accordance with their respective MIT or Apache licenses:</p>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Package</th>
+            <th>Description</th>
+            <th>Official Website</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Next.js</strong></td>
+            <td>React Server-side & Static Web Framework</td>
+            <td><a href="https://nextjs.org" target="_blank" rel="noopener">https://nextjs.org</a></td>
+          </tr>
+          <tr>
+            <td><strong>Tailwind CSS</strong></td>
+            <td>Utility-first CSS Framework</td>
+            <td><a href="https://tailwindcss.com" target="_blank" rel="noopener">https://tailwindcss.com</a></td>
+          </tr>
+          <tr>
+            <td><strong>Lucide React</strong></td>
+            <td>Clean, modern open-source vector icon set</td>
+            <td><a href="https://lucide.dev" target="_blank" rel="noopener">https://lucide.dev</a></td>
+          </tr>
+          <tr>
+            <td><strong>TypeScript</strong></td>
+            <td>Typed JavaScript programming language</td>
+            <td><a href="https://www.typescriptlang.org" target="_blank" rel="noopener">https://www.typescriptlang.org</a></td>
+          </tr>
+          <tr>
+            <td><strong>Google Fonts</strong></td>
+            <td>Plus Jakarta Sans & JetBrains Mono</td>
+            <td><a href="https://fonts.google.com" target="_blank" rel="noopener">https://fonts.google.com</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
 
-# Shut down the container
-docker compose down</pre>
-    <p>Access the containerized instance at <code>http://localhost:3000</code>.</p>
+    <!-- 9. Support & Changelog -->
+    <section id="support">
+      <h2>9. Support & Changelog</h2>
+      <div class="callout">
+        <strong>Need Customization Assistance or Found a Bug?</strong><br>
+        We provide quick response support for all purchasers. You can reach out directly through our ThemeForest author profile support tab.
+      </div>
 
-    <h2>5. Production Build Verification</h2>
-    <p>To compile the project and generate the standalone production artifact:</p>
-    <pre>npm run build
-npm start</pre>
+      <h3>Changelog</h3>
+      <p><strong>Version 1.0.0</strong> - September 2026</p>
+      <ul>
+        <li>Initial official ThemeForest release.</li>
+        <li>Implemented AI Mesh & Gateway Traffic telemetry views.</li>
+        <li>Optimized Token Telemetry inspection tables with real-time stream status.</li>
+        <li>Standardized multi-stage Docker container pipeline.</li>
+      </ul>
+    </section>
 
-    <h2>6. Support & Customization</h2>
-    <p>For customization inquiries, API integration, or bug reports, please contact the author via the ThemeForest item support page.</p>
-  </div>
+    <footer>
+      <span>&copy; 2026 TecknowPoint. All rights reserved.</span>
+      <span>Engineered for AI Infrastructure Platforms</span>
+    </footer>
+  </main>
+
+  <script>
+    // Simple active link highlight on scroll
+    window.addEventListener('DOMContentLoaded', () => {
+      const links = document.querySelectorAll('.nav-link');
+      const sections = document.querySelectorAll('section');
+
+      window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(section => {
+          const sectionTop = section.offsetTop;
+          if (pageYOffset >= sectionTop - 100) {
+            current = section.getAttribute('id');
+          }
+        });
+
+        links.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === `#${current}`) {
+            link.classList.add('active');
+          }
+        });
+      });
+    });
+  </script>
 </body>
 </html>
