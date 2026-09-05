@@ -13,6 +13,7 @@ import {
   Sparkles,
   X,
   Cpu,
+  Calculator
 } from "lucide-react";
 
 interface SidebarProps {
@@ -25,6 +26,7 @@ const navigationItems = [
   { name: "Gateway Traffic", href: "/clients", icon: Users },
   { name: "Model Provisioning", href: "/orders", icon: Server },
   { name: "Token Telemetry", href: "/transactions", icon: Activity },
+  { name: "Token Calculator", href: "/token-calculator", icon: Calculator }, 
   { name: "Settlements & Quotas", href: "/payments", icon: CreditCard },
   { name: "Security & API Keys", href: "/settings", icon: Settings },
 ];
