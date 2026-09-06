@@ -1,374 +1,409 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Terminal, 
-  GitBranch, 
-  Sparkles, 
+  Plus, 
   Copy, 
   Check, 
-  Play, 
-  Plus, 
   Search, 
-  History, 
-  Tag, 
+  Trash2, 
+  Sparkles, 
   Cpu, 
-  Coins, 
-  Layers,
+  Play, 
+  Layers, 
+  X,
   Code2,
-  CheckCircle2
+  Tag
 } from 'lucide-react';
 
-interface PromptVersion {
-  version: string;
-  template: string;
-  tokens: number;
-  avgLatency: string;
-  createdAt: string;
-  notes: string;
-}
-
-interface PromptItem {
+interface PromptTemplate {
   id: string;
-  name: string;
-  slug: string;
+  title: string;
+  description: string;
   category: string;
-  targetModel: string;
-  activeVersion: string;
-  versions: PromptVersion[];
+  model: string;
+  systemPrompt: string;
+  userPromptTemplate: string;
   variables: string[];
 }
 
-const INITIAL_PROMPTS: PromptItem[] = [
+const INITIAL_PROMPTS: PromptTemplate[] = [
   {
-    id: 'p-1',
-    name: 'Customer Ticket Triage & Sentiment',
-    slug: 'ticket-triage',
-    category: 'Support AI',
-    targetModel: 'gpt-4o',
-    activeVersion: 'v2.1',
-    variables: ['customer_query', 'account_tier'],
-    versions: [
-      {
-        version: 'v2.1',
-        template: `You are a Tier-3 Support Gateway. Analyze the following inbound user inquiry:\nCustomer Query: "{{customer_query}}"\nAccount Level: "{{account_tier}}"\n\nTask:\n1. Extract sentiment (Positive, Neutral, Urgent).\n2. Classify intent and return recommended JSON triage schema.`,
-        tokens: 68,
-        avgLatency: '240ms',
-        createdAt: '2 hours ago',
-        notes: 'Strict JSON schema formatting added'
-      },
-      {
-        version: 'v2.0',
-        template: `Classify the following customer ticket and tell if they are angry:\n"{{customer_query}}"`,
-        tokens: 34,
-        avgLatency: '180ms',
-        createdAt: '3 days ago',
-        notes: 'Basic sentiment extraction without JSON enforcement'
-      }
-    ]
+    id: 'pr-01',
+    title: 'Code Security & Vulnerability Auditor',
+    description: 'Deep AST security review detecting memory leaks, SQL injection, and logic flaws.',
+    category: 'Engineering',
+    model: 'qwen/qwen3.6-27b',
+    systemPrompt: 'You are a principal security engineer. Review the provided source code for CVEs, AST vulnerabilities, and memory leaks. Provide actionable diff patches in markdown code blocks.',
+    userPromptTemplate: 'Review the following {{language}} module for critical vulnerabilities:\n\n```{{code}}```',
+    variables: ['language', 'code'],
   },
   {
-    id: 'p-2',
-    name: 'SQL Query & Schema Synthesizer',
-    slug: 'sql-generator',
-    category: 'Code Generation',
-    targetModel: 'claude-3-5-sonnet',
-    activeVersion: 'v1.3',
-    variables: ['user_intent', 'table_schema', 'dialect'],
-    versions: [
-      {
-        version: 'v1.3',
-        template: `Target Dialect: {{dialect}}\nContext Schema:\n{{table_schema}}\n\nGenerate an optimized, index-aware SQL query for this request:\nRequest: "{{user_intent}}"\n\nOnly return executable SQL enclosed in markdown without explanations.`,
-        tokens: 58,
-        avgLatency: '320ms',
-        createdAt: 'Yesterday',
-        notes: 'Optimized for PostgreSQL and Snowflake index awareness'
-      }
-    ]
+    id: 'pr-02',
+    title: 'Customer Ticket Intent & Priority Triage',
+    description: 'Zero-shot classification categorizing inbound issues into urgent, billing, or tech.',
+    category: 'Operations',
+    model: 'llama-3.1-8b-instant',
+    systemPrompt: 'You are an automated support triage parser. Output strict JSON with keys: "priority" (P1-P4), "department", and "resolution_hint". Do not output conversational preamble.',
+    userPromptTemplate: 'Analyze customer message:\n"{{customer_message}}"',
+    variables: ['customer_message'],
   },
   {
-    id: 'p-3',
-    name: 'RAG Context Re-Ranker & Summarizer',
-    slug: 'rag-reranker',
-    category: 'Observability',
-    targetModel: 'deepseek-r1',
-    activeVersion: 'v1.0',
-    variables: ['retrieved_chunks', 'user_question'],
-    versions: [
-      {
-        version: 'v1.0',
-        template: `Given the retrieved document chunks below:\n{{retrieved_chunks}}\n\nAnswer user question: "{{user_question}}".\nProvide citations for every claim. If answer is not present, respond "NOT_FOUND".`,
-        tokens: 52,
-        avgLatency: '410ms',
-        createdAt: '5 days ago',
-        notes: 'Initial production baseline for knowledge base'
-      }
-    ]
-  }
+    id: 'pr-03',
+    title: 'PostgreSQL Query Planner & Schema Architect',
+    description: 'Translates natural language specifications into indexed relational schema & SQL.',
+    category: 'Data Architecture',
+    model: 'llama-3.3-70b-versatile',
+    systemPrompt: 'You are an ultra-fast PostgreSQL optimizer. Write ANSI SQL with appropriate index hints, execution plan cost estimation, and transaction boundaries.',
+    userPromptTemplate: 'Database Schema:\n{{schema}}\n\nObjective: {{query_goal}}',
+    variables: ['schema', 'query_goal'],
+  },
 ];
 
 export default function PromptsPage() {
-  const [prompts, setPrompts] = useState<PromptItem[]>(INITIAL_PROMPTS);
-  const [selectedPromptId, setSelectedPromptId] = useState<string>('p-1');
-  const [activeVersionIndex, setActiveVersionIndex] = useState<number>(0);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [copied, setCopied] = useState<boolean>(false);
+  const router = useRouter();
+  const [prompts, setPrompts] = useState<PromptTemplate[]>(INITIAL_PROMPTS);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  // Create Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [category, setCategory] = useState('Engineering');
+  const [model, setModel] = useState('qwen/qwen3.6-27b');
+  const [systemPrompt, setSystemPrompt] = useState('');
+  const [userPromptTemplate, setUserPromptTemplate] = useState('');
 
-  // Variable test inputs
-  const [variableValues, setVariableValues] = useState<Record<string, string>>({
-    customer_query: "The payment gateway is throwing 504 errors on checkout!",
-    account_tier: "Enterprise (SLA: 1 hour)",
-    user_intent: "Find top 5 spending customers who joined after Jan 2026",
-    table_schema: "users (id, name, created_at); transactions (id, user_id, amount, status)",
-    dialect: "PostgreSQL 16",
-    retrieved_chunks: "Doc 1: Latency caps at 200ms.\nDoc 2: Rate limit threshold is 500 RPM.",
-    user_question: "What is our current rate limit?"
+  const categories = ['All', 'Engineering', 'Operations', 'Data Architecture'];
+
+  const filteredPrompts = prompts.filter((p) => {
+    const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          p.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCat = selectedCategory === 'All' || p.category === selectedCategory;
+    return matchesSearch && matchesCat;
   });
 
-  const selectedPrompt = useMemo(() => {
-    return prompts.find(p => p.id === selectedPromptId) || prompts[0];
-  }, [prompts, selectedPromptId]);
-
-  const currentVersion = selectedPrompt.versions[activeVersionIndex] || selectedPrompt.versions[0];
-
-  // Dynamic variable replacement simulation
-  const renderedPrompt = useMemo(() => {
-    let text = currentVersion.template;
-    selectedPrompt.variables.forEach(v => {
-      const val = variableValues[v] || `{{${v}}}`;
-      text = text.replaceAll(`{{${v}}}`, val);
-    });
-    return text;
-  }, [currentVersion, selectedPrompt, variableValues]);
-
-  const handleCopy = (text: string) => {
+  const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
   };
 
-  const filteredPrompts = prompts.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    p.category.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleDelete = (id: string) => {
+    if (confirm('Delete this prompt template from registry?')) {
+      setPrompts((prev) => prev.filter((p) => p.id !== id));
+    }
+  };
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    const varMatches = userPromptTemplate.match(/\{\{([a-zA-Z0-9_]+)\}\}/g) || [];
+    const extractedVars = Array.from(new Set(varMatches.map((v) => v.replace(/[{}]/g, ''))));
+
+    const newPrompt: PromptTemplate = {
+      id: `pr-${Date.now().toString().slice(-4)}`,
+      title,
+      description,
+      category,
+      model,
+      systemPrompt,
+      userPromptTemplate,
+      variables: extractedVars,
+    };
+
+    setPrompts([newPrompt, ...prompts]);
+    setIsModalOpen(false);
+    setTitle('');
+    setDescription('');
+    setSystemPrompt('');
+    setUserPromptTemplate('');
+  };
+
+  const handleLaunchPlayground = () => {
+    router.push('/playground');
+  };
 
   return (
-    <div className="min-h-[calc(100vh-4.5rem)] bg-[#07090E] text-slate-100 p-6 lg:p-10 space-y-8 font-sans">
-      
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800/80 pb-6">
+    <div className="space-y-8 pb-10">
+      {/* Top Banner Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#0e2a47] pb-6">
         <div>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-purple-600/10 border border-purple-500/30 text-purple-400">
-              <Terminal className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-                Prompt Registry & Versioning
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
-                  CI/CD Orchestration
-                </span>
-              </h1>
-              <p className="text-sm text-slate-400 mt-1">
-                Centrally manage, test dynamic variables, and track token velocity across deployment revisions.
-              </p>
-            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-white font-mono flex items-center gap-2.5">
+              <Terminal className="w-6 h-6 text-cyan-400" />
+              PROMPT REGISTRY
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+              VERSION CONTROLLED
+            </span>
           </div>
+          <p className="text-slate-400 text-sm mt-1 font-sans">
+            Curate, parameterize, and deploy production system prompts across TechknowPointAI gateway proxies.
+          </p>
         </div>
 
-        <button 
-          onClick={() => alert("Creating new prompt template...")}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-sm font-semibold text-white transition-all shadow-md shadow-purple-600/20"
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-sm font-semibold transition-all shadow-[0_0_20px_rgba(6,182,212,0.25)] flex items-center gap-2 self-start md:self-auto font-mono"
         >
-          <Plus className="w-4 h-4" /> New Prompt Schema
+          <Plus className="w-4 h-4" />
+          CREATE PROMPT
         </button>
       </div>
 
-      {/* Main Workspace Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Left Column: Prompt Navigation List (4 cols) */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
-            <input
-              type="text"
-              placeholder="Search prompts or categories..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#0D121F] border border-slate-800 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
-            />
-          </div>
-
-          <div className="space-y-2.5">
-            {filteredPrompts.map((p) => {
-              const isSelected = p.id === selectedPromptId;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    setSelectedPromptId(p.id);
-                    setActiveVersionIndex(0);
-                  }}
-                  className={`w-full p-4 rounded-xl border text-left transition-all relative ${
-                    isSelected
-                      ? 'border-purple-500 bg-purple-950/20 shadow-[0_0_20px_rgba(168,85,247,0.12)] ring-1 ring-purple-500'
-                      : 'border-slate-800 bg-[#0D121F]/80 hover:border-slate-700 hover:bg-slate-900/50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md border border-slate-700/60 bg-slate-800/40 text-slate-300">
-                      {p.category}
-                    </span>
-                    <span className="text-[11px] font-mono text-purple-400 font-medium">
-                      {p.activeVersion}
-                    </span>
-                  </div>
-                  <h3 className="text-sm font-semibold text-white mt-2.5 truncate">{p.name}</h3>
-                  
-                  <div className="mt-3 flex items-center justify-between text-xs text-slate-400 font-mono">
-                    <span className="flex items-center gap-1.5 text-slate-400">
-                      <Cpu className="w-3.5 h-3.5 text-slate-500" /> {p.targetModel}
-                    </span>
-                    <span>{p.versions.length} versions</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+      {/* Filter & Omni Search Bar */}
+      <div className="p-4 rounded-2xl bg-[#06182e]/80 border border-[#0d3b66] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl backdrop-blur-xl">
+        <div className="flex items-center gap-2.5 w-full sm:w-80 px-3.5 py-2 rounded-xl bg-[#030e1d] border border-[#0e355c] focus-within:border-cyan-500 transition-colors">
+          <Search className="w-4 h-4 text-slate-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search templates or keywords..."
+            className="bg-transparent text-xs text-slate-200 outline-none w-full placeholder-slate-500 font-sans"
+          />
         </div>
 
-        {/* Right Column: Prompt Detail, Versions & Variable Live Sandbox (8 cols) */}
-        <div className="lg:col-span-8 space-y-6">
-          
-          {/* Header Info & Version Picker */}
-          <div className="p-6 rounded-2xl bg-[#0D121F] border border-slate-800 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-bold text-white">{selectedPrompt.name}</h2>
-                  <span className="text-xs font-mono text-slate-500">#{selectedPrompt.slug}</span>
-                </div>
-                <p className="text-xs text-slate-400 mt-1 flex items-center gap-2">
-                  <span>Target: <strong className="text-slate-200">{selectedPrompt.targetModel}</strong></span>
-                  <span>•</span>
-                  <span>Variables: <strong className="text-purple-400">{selectedPrompt.variables.length} bound</strong></span>
-                </p>
-              </div>
-
-              {/* Version Selector Tabs */}
-              <div className="flex items-center gap-1 bg-[#080B12] p-1 rounded-xl border border-slate-800">
-                <span className="text-xs text-slate-500 px-2 flex items-center gap-1">
-                  <GitBranch className="w-3.5 h-3.5" /> Revisions:
-                </span>
-                {selectedPrompt.versions.map((ver, idx) => (
-                  <button
-                    key={ver.version}
-                    onClick={() => setActiveVersionIndex(idx)}
-                    className={`px-3 py-1 text-xs font-mono rounded-lg transition-all ${
-                      idx === activeVersionIndex
-                        ? 'bg-purple-600 text-white font-semibold shadow'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {ver.version}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Version Meta Bar */}
-            <div className="p-3 rounded-xl bg-[#080B12]/80 border border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
-              <div className="flex items-center gap-4 text-slate-300">
-                <span>Tokens: <strong className="text-white">{currentVersion.tokens}</strong></span>
-                <span>Avg Latency: <strong className="text-purple-400">{currentVersion.avgLatency}</strong></span>
-                <span className="text-slate-500">{currentVersion.createdAt}</span>
-              </div>
-              <span className="text-slate-400 italic text-[11px]">{currentVersion.notes}</span>
-            </div>
-          </div>
-
-          {/* Template Editor / Preview & Variables */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            
-            {/* Raw Template with syntax (7 cols) */}
-            <div className="md:col-span-7 space-y-4">
-              <div className="p-5 rounded-2xl bg-[#0D121F] border border-slate-800 shadow-xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                    <Code2 className="w-4 h-4 text-purple-400" /> Template Definition ({currentVersion.version})
-                  </span>
-                  <button
-                    onClick={() => handleCopy(currentVersion.template)}
-                    className="text-xs text-slate-400 hover:text-white flex items-center gap-1 font-mono transition-colors"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? 'Copied' : 'Copy'}</span>
-                  </button>
-                </div>
-                
-                <div className="p-4 rounded-xl bg-[#07090E] border border-slate-800/80 text-xs font-mono text-slate-300 leading-relaxed whitespace-pre-wrap">
-                  {currentVersion.template}
-                </div>
-              </div>
-
-              {/* Rendered Dynamic Live Output */}
-              <div className="p-5 rounded-2xl bg-[#0D121F] border border-slate-800 shadow-xl space-y-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-emerald-400" /> Live Interpolated Payload (Ready for LLM)
-                </span>
-                <div className="p-4 rounded-xl bg-[#07090E] border border-emerald-500/20 text-xs font-mono text-slate-200 leading-relaxed whitespace-pre-wrap">
-                  {renderedPrompt}
-                </div>
-              </div>
-            </div>
-
-            {/* Variable Bindings Sandbox (5 cols) */}
-            <div className="md:col-span-5 space-y-4">
-              <div className="p-5 rounded-2xl bg-[#0D121F] border border-slate-800 shadow-xl space-y-4">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                  <Tag className="w-4 h-4 text-purple-400" /> Variable Bindings
-                </span>
-                <p className="text-xs text-slate-500">
-                  Update dummy values to see how the prompt hydrates in runtime:
-                </p>
-
-                <div className="space-y-3">
-                  {selectedPrompt.variables.map((v) => (
-                    <div key={v} className="space-y-1">
-                      <label className="text-[11px] font-mono text-purple-300 block">
-                        {`{{${v}}}`}
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={variableValues[v] || ''}
-                        onChange={(e) => setVariableValues({
-                          ...variableValues,
-                          [v]: e.target.value
-                        })}
-                        className="w-full bg-[#07090E] border border-slate-800 rounded-lg p-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-purple-500 resize-none"
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                <div className="pt-2 border-t border-slate-800/80">
-                  <button 
-                    onClick={() => alert("Simulation request dispatched to AI gateway!")}
-                    className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white flex items-center justify-center gap-2 shadow-md shadow-purple-600/20 transition-all"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" /> Run Test Inference
-                  </button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
+        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-medium transition-all ${
+                selectedCategory === cat
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_12px_rgba(6,182,212,0.2)]'
+                  : 'text-slate-400 hover:text-white hover:bg-[#08203d]'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
-
       </div>
 
+      {/* Prompt Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredPrompts.map((prompt) => (
+          <div
+            key={prompt.id}
+            className="rounded-2xl bg-gradient-to-b from-[#081e3a] to-[#041022] border border-[#103a68] hover:border-cyan-500/50 transition-all duration-300 p-5 shadow-2xl flex flex-col justify-between group"
+          >
+            <div className="space-y-4">
+              {/* Category & Model Target Tag */}
+              <div className="flex items-center justify-between">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#030e1d] text-cyan-400 border border-[#0e355c]">
+                  {prompt.category}
+                </span>
+                <span className="flex items-center gap-1 text-[10px] font-mono text-slate-400">
+                  <Cpu className="w-3 h-3 text-cyan-400" />
+                  {prompt.model}
+                </span>
+              </div>
+
+              {/* Title & Description */}
+              <div>
+                <h3 className="text-base font-bold text-white font-mono group-hover:text-cyan-300 transition-colors">
+                  {prompt.title}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1 line-clamp-2 leading-relaxed font-sans">
+                  {prompt.description}
+                </p>
+              </div>
+
+              {/* System Instruction Surface */}
+              <div className="p-3 rounded-xl bg-[#030e1d] border border-[#0e355c]/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold tracking-wider text-purple-400 uppercase flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> System Context
+                  </span>
+                  <span className="text-[9px] font-mono text-slate-500">Immutable</span>
+                </div>
+                <p className="text-xs font-mono text-slate-300 line-clamp-3 leading-relaxed">
+                  {prompt.systemPrompt}
+                </p>
+              </div>
+
+              {/* Variable Parameters */}
+              <div>
+                <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block mb-1.5">
+                  Parameters ({prompt.variables.length})
+                </span>
+                <div className="flex flex-wrap gap-1.5 min-h-[24px]">
+                  {prompt.variables.length > 0 ? (
+                    prompt.variables.map((v) => (
+                      <span
+                        key={v}
+                        className="px-2 py-0.5 rounded-md bg-[#08203d] border border-[#0d3b66] text-[10px] font-mono text-cyan-300"
+                      >
+                        &#123;&#123;{v}&#125;&#125;
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[10px] font-mono text-slate-600">Static payload (no variables)</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="pt-4 mt-5 border-t border-[#0e355c] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleCopy(prompt.systemPrompt, prompt.id)}
+                  className="flex items-center gap-1.5 text-xs font-mono text-slate-400 hover:text-cyan-400 transition-colors"
+                >
+                  {copiedId === prompt.id ? (
+                    <Check className="w-3.5 h-3.5 text-cyan-400" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
+                  <span>{copiedId === prompt.id ? 'COPIED' : 'COPY'}</span>
+                </button>
+
+                <button
+                  onClick={handleLaunchPlayground}
+                  title="Test in AI Sandbox"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-mono transition-colors"
+                >
+                  <Play className="w-3 h-3 text-cyan-400" />
+                  <span>TEST</span>
+                </button>
+              </div>
+
+              <button 
+                onClick={() => handleDelete(prompt.id)}
+                title="Delete Prompt"
+                className="p-1.5 rounded-lg bg-[#08203d] hover:bg-rose-950/60 border border-[#0d3b66] text-slate-400 hover:text-rose-400 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {filteredPrompts.length === 0 && (
+          <div className="col-span-full py-16 text-center text-slate-500 font-mono text-xs">
+            No templates matching the query &quot;{searchQuery}&quot; found.
+          </div>
+        )}
+      </div>
+
+      {/* Creation Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="bg-[#051427] border border-[#0e355c] rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-[#0d3b66] pb-3">
+              <div>
+                <h2 className="text-base font-bold text-white font-mono">NEW PROMPT TEMPLATE</h2>
+                <p className="text-[11px] text-slate-400">Save optimized instructions to registry</p>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="p-1.5 rounded-lg bg-[#08203d] text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreate} className="space-y-4 font-mono text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1">TEMPLATE TITLE</label>
+                <input
+                  type="text"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Legal Contract Entity Extractor"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">CATEGORY</label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+                  >
+                    <option value="Engineering">Engineering</option>
+                    <option value="Operations">Operations</option>
+                    <option value="Data Architecture">Data Architecture</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">RECOMMENDED MODEL</label>
+                  <select
+                    value={model}
+                    onChange={(e) => setModel(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+                  >
+                    <option value="qwen/qwen3.6-27b">Qwen 3.6 (27B)</option>
+                    <option value="llama-3.3-70b-versatile">Llama 3.3 (70B)</option>
+                    <option value="llama-3.1-8b-instant">Llama 3.1 (8B)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1">DESCRIPTION</label>
+                <input
+                  type="text"
+                  required
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Brief summary of expected use cases"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1">SYSTEM INSTRUCTION</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  placeholder="You are an expert AI..."
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500 resize-none font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1">USER PROMPT (USE &#123;&#123;variable&#125;&#125;)</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={userPromptTemplate}
+                  onChange={(e) => setUserPromptTemplate(e.target.value)}
+                  placeholder="Process payload: {{input_text}}"
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500 resize-none font-mono"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-[#08203d] hover:bg-[#0a2a50] text-slate-300 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold shadow-[0_0_15px_rgba(6,182,212,0.25)]"
+                >
+                  Save to Registry
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

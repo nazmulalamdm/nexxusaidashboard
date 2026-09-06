@@ -1,277 +1,421 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import {
-  Download,
-  CreditCard,
+import { useState, useEffect } from 'react';
+import { 
+  getPaymentsData, 
+  updateAutoRecharge, 
+  setDefaultPaymentMethod, 
+  removePaymentMethod,
+  PaymentsPageData,
+  PaymentMethodItem 
+} from '@/server/actions/payments';
+import { 
+  CreditCard, 
+  ShieldCheck, 
+  Plus, 
+  Trash2, 
+  Check, 
+  Coins, 
+  Zap, 
+  Lock, 
+  AlertCircle, 
+  Mail, 
+  Building2, 
+  Save, 
+  Loader2,
   CheckCircle2,
-  FileText,
-  DollarSign,
-  TrendingUp,
-  Sparkles,
-  ExternalLink,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
-
-interface InvoiceEntry {
-  id: string;
-  period: string;
-  generatedDate: string;
-  tokensBilled: string;
-  amount: string;
-  method: string;
-  status: "Paid" | "Processing" | "Failed";
-}
-
-const invoicesData: InvoiceEntry[] = [
-  {
-    id: "INV-2026-089",
-    period: "Aug 01, 2026 – Aug 31, 2026",
-    generatedDate: "Sep 01, 2026",
-    tokensBilled: "184.2M Tokens",
-    amount: "$2,840.50",
-    method: "Mastercard •••• 4092",
-    status: "Paid",
-  },
-  {
-    id: "INV-2026-074",
-    period: "Jul 01, 2026 – Jul 31, 2026",
-    generatedDate: "Aug 01, 2026",
-    tokensBilled: "142.9M Tokens",
-    amount: "$1,980.20",
-    method: "Mastercard •••• 4092",
-    status: "Paid",
-  },
-  {
-    id: "INV-2026-058",
-    period: "Jun 01, 2026 – Jun 30, 2026",
-    generatedDate: "Jul 01, 2026",
-    tokensBilled: "98.4M Tokens",
-    amount: "$1,340.00",
-    method: "Wire Transfer (ACH)",
-    status: "Paid",
-  },
-  {
-    id: "INV-2026-041",
-    period: "May 01, 2026 – May 31, 2026",
-    generatedDate: "Jun 01, 2026",
-    tokensBilled: "45.1M Tokens",
-    amount: "$680.75",
-    method: "Visa •••• 9811",
-    status: "Paid",
-  },
-  {
-    id: "INV-2026-032",
-    period: "Apr 01, 2026 – Apr 30, 2026",
-    generatedDate: "May 01, 2026",
-    tokensBilled: "38.2M Tokens",
-    amount: "$540.20",
-    method: "Mastercard •••• 4092",
-    status: "Paid",
-  },
-  {
-    id: "INV-2026-019",
-    period: "Mar 01, 2026 – Mar 31, 2026",
-    generatedDate: "Apr 01, 2026",
-    tokensBilled: "29.8M Tokens",
-    amount: "$412.00",
-    method: "Visa •••• 9811",
-    status: "Paid",
-  },
-  {
-    id: "INV-2026-008",
-    period: "Feb 01, 2026 – Feb 28, 2026",
-    generatedDate: "Mar 01, 2026",
-    tokensBilled: "18.5M Tokens",
-    amount: "$290.40",
-    method: "Wire Transfer (ACH)",
-    status: "Paid",
-  },
-];
+  X
+} from 'lucide-react';
 
 export default function PaymentsPage() {
-  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [data, setData] = useState<PaymentsPageData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  const handleDownload = (id: string) => {
-    setDownloadingId(id);
-    setTimeout(() => {
-      setDownloadingId(null);
-    }, 1200);
+  // Auto recharge settings local state
+  const [autoRecharge, setAutoRecharge] = useState(true);
+  const [threshold, setThreshold] = useState('15.00');
+  const [rechargeAmount, setRechargeAmount] = useState('100.00');
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // New card modal inputs
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardHolder, setCardHolder] = useState('');
+  const [cardExp, setCardExp] = useState('');
+  const [cardCvc, setCardCvc] = useState('');
+
+  const loadData = async () => {
+    setIsLoading(true);
+    const res = await getPaymentsData();
+    setData(res);
+    setAutoRecharge(res.settings.autoRechargeEnabled);
+    setThreshold(res.settings.rechargeThresholdUsd.toFixed(2));
+    setRechargeAmount(res.settings.rechargeAmountUsd.toFixed(2));
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    await updateAutoRecharge({
+      enabled: autoRecharge,
+      threshold: parseFloat(threshold) || 10,
+      amount: parseFloat(rechargeAmount) || 50,
+    });
+    setIsSaving(false);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 2000);
+  };
+
+  const handleSetDefault = async (id: string) => {
+    await setDefaultPaymentMethod(id);
+    loadData();
+  };
+
+  const handleRemove = async (id: string) => {
+    if (confirm('Are you sure you want to remove this payment method?')) {
+      await removePaymentMethod(id);
+      loadData();
+    }
+  };
+
+  const handleAddCard = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!data) return;
+    const newMethod: PaymentMethodItem = {
+      id: `pm-${Date.now().toString().slice(-4)}`,
+      brand: cardNumber.startsWith('4') ? 'visa' : 'mastercard',
+      last4: cardNumber.slice(-4) || '1234',
+      expMonth: 12,
+      expYear: 2029,
+      holderName: cardHolder || 'Authorized User',
+      isDefault: false,
+    };
+    setData({
+      ...data,
+      methods: [...data.methods, newMethod],
+    });
+    setIsAddModalOpen(false);
+    setCardNumber('');
+    setCardHolder('');
+    setCardExp('');
+    setCardCvc('');
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 max-w-[1600px] mx-auto">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+    <div className="space-y-8 pb-10">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#0e2a47] pb-6">
         <div>
-          <h1 className="text-base font-semibold text-slate-800 dark:text-slate-100 tracking-tight">
-            Billing Architecture & Settlements
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Enterprise usage-based invoices, payment rails, and threshold audit
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-white font-mono flex items-center gap-2.5">
+              <CreditCard className="w-6 h-6 text-cyan-400" />
+              PAYMENT METHODS & BILLING PROFILES
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+              PCI-DSS COMPLIANT
+            </span>
+          </div>
+          <p className="text-slate-400 text-sm mt-1 font-sans">
+            Configure primary funding sources, smart auto-refill triggers, and company tax invoice details.
           </p>
         </div>
 
         <button
-          type="button"
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-brand-500 hover:bg-brand-600 active:scale-[0.98] text-white rounded-md text-xs font-medium transition-all shadow-xs"
+          onClick={() => setIsAddModalOpen(true)}
+          className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-sm font-semibold transition-all shadow-[0_0_20px_rgba(6,182,212,0.25)] flex items-center gap-2 font-mono self-start md:self-auto"
         >
-          <CreditCard className="w-3.5 h-3.5" />
-          <span>Manage Payment Rails</span>
+          <Plus className="w-4 h-4" />
+          ATTACH PAYMENT SOURCE
         </button>
       </div>
 
-      {/* 3 Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-4 rounded-lg bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-            <span>Current MTD Burn</span>
-            <DollarSign className="w-3.5 h-3.5 text-brand-500" />
-          </div>
-          <div className="text-base font-bold font-mono text-slate-800 dark:text-slate-100">
-            $1,429.80
-          </div>
-          <div className="mt-2 text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-mono">
-            <TrendingUp className="w-3 h-3" />
-            <span>12% below projected quota</span>
-          </div>
-        </div>
+      {/* Main Grid: Left side Cards, Right side Auto-refill Config */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left 2 Cols: Saved Payment Methods */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="rounded-2xl bg-[#06182e]/80 border border-[#0d3b66] overflow-hidden backdrop-blur-2xl shadow-2xl p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-[#0d3b66] pb-4">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-cyan-400" />
+                <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                  ACTIVE PAYMENT SOURCES
+                </h2>
+              </div>
+              <span className="text-xs font-mono text-slate-400">
+                Encrypted with Stripe Vault
+              </span>
+            </div>
 
-        <div className="p-4 rounded-lg bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-            <span>Remaining Prepaid Balance</span>
-            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-          </div>
-          <div className="text-base font-bold font-mono text-slate-800 dark:text-slate-100">
-            $8,570.20
-          </div>
-          <div className="mt-2 text-[11px] text-slate-400 font-mono">
-            Auto-recharge trigger at &lt; $1,000
-          </div>
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {isLoading ? (
+                <div className="col-span-2 py-12 text-center text-slate-500 font-mono text-xs">
+                  <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-cyan-400" />
+                  Loading payment tokens...
+                </div>
+              ) : (
+                data?.methods.map((method) => (
+                  <div
+                    key={method.id}
+                    className={`relative p-5 rounded-2xl border transition-all duration-300 flex flex-col justify-between h-44 ${
+                      method.isDefault
+                        ? 'bg-gradient-to-br from-[#0c274a] via-[#06182e] to-[#041022] border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.2)]'
+                        : 'bg-[#030e1d] border-[#0e355c] hover:border-slate-700'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider">
+                          {method.brand === 'usdc' ? 'CRYPTO ASSET' : `${method.brand.toUpperCase()} CARD`}
+                        </span>
+                        {method.isDefault ? (
+                          <span className="px-2 py-0.5 rounded-md bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[10px] font-mono font-bold">
+                            PRIMARY
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleSetDefault(method.id)}
+                            className="text-[11px] font-mono text-slate-400 hover:text-cyan-400 transition-colors"
+                          >
+                            Set Primary
+                          </button>
+                        )}
+                      </div>
 
-        <div className="p-4 rounded-lg bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-            <span>Settled Payment Rail</span>
-            <CreditCard className="w-3.5 h-3.5 text-slate-400" />
-          </div>
-          <div className="text-base font-semibold text-slate-800 dark:text-slate-100 font-mono">
-            Mastercard •••• 4092
-          </div>
-          <div className="mt-2 text-[11px] text-slate-400 flex items-center justify-between">
-            <span className="font-mono">Exp: 09/28</span>
-            <span className="text-brand-500 font-medium cursor-pointer hover:underline">
-              Replace
-            </span>
-          </div>
-        </div>
-      </div>
+                      <div className="mt-4 font-mono text-lg font-bold text-white tracking-widest">
+                        •••• •••• •••• {method.last4}
+                      </div>
 
-      {/* Invoices Table with Visible Dark Background */}
-      <div className="bg-white dark:bg-[#272b40] rounded-lg border border-slate-200 dark:border-slate-700/80 overflow-hidden shadow-xs">
-        <div className="p-3.5 border-b border-slate-200 dark:border-slate-700/80 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-brand-500" />
-            <h3 className="text-xs font-semibold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
-              Settlement Ledger & Invoices
-            </h3>
-          </div>
-          <span className="text-[11px] font-mono text-slate-400">
-            Currency: USD ($)
-          </span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-[11px] font-semibold uppercase tracking-wider bg-slate-50 dark:bg-slate-900/60 text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
-                <th className="py-2.5 px-4">Invoice Reference</th>
-                <th className="py-2.5 px-4">Billing Window</th>
-                <th className="py-2.5 px-4 text-right">Inference Ingestion</th>
-                <th className="py-2.5 px-4 text-right">Net Amount</th>
-                <th className="py-2.5 px-4">Payment Method</th>
-                <th className="py-2.5 px-4 text-center">Settlement Status</th>
-                <th className="py-2.5 px-4 text-right">Receipt</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60 text-xs text-slate-600 dark:text-slate-300">
-              {invoicesData.map((inv) => (
-                <tr
-                  key={inv.id}
-                  className="hover:bg-slate-50/70 dark:hover:bg-slate-700/30 transition-colors"
-                >
-                  <td className="py-2.5 px-4 font-mono text-[11px] font-medium text-brand-500">
-                    {inv.id}
-                  </td>
-                  <td className="py-2.5 px-4 text-slate-700 dark:text-slate-200 font-medium">
-                    <div>{inv.period}</div>
-                    <div className="text-[11px] text-slate-400 font-mono font-normal mt-0.5">
-                      Issued: {inv.generatedDate}
+                      <div className="text-xs font-sans text-slate-400 mt-1">
+                        {method.network ? method.network : method.holderName}
+                      </div>
                     </div>
-                  </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-[11px] text-slate-400">
-                    {inv.tokensBilled}
-                  </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-xs font-semibold text-slate-800 dark:text-slate-100">
-                    {inv.amount}
-                  </td>
-                  <td className="py-2.5 px-4 font-mono text-[11px] text-slate-400">
-                    {inv.method}
-                  </td>
-                  <td className="py-2.5 px-4 text-center">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      <CheckCircle2 className="w-2.5 h-2.5" />
-                      {inv.status}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => handleDownload(inv.id)}
-                      disabled={downloadingId === inv.id}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-medium text-slate-500 dark:text-slate-300 hover:text-brand-500 dark:hover:text-brand-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 active:scale-95 transition-all disabled:opacity-60"
-                    >
-                      <Download className={`w-3 h-3 ${downloadingId === inv.id ? "animate-bounce text-brand-500" : ""}`} />
-                      <span>{downloadingId === inv.id ? "Saving..." : "PDF"}</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
 
-        {/* Footer & Pagination */}
-        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 border-t border-slate-200 dark:border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 font-mono">
-          <div className="flex items-center gap-2">
-            <span>Enterprise SLA: Tier 1 Auto-Settlement</span>
-            <span className="text-slate-600">•</span>
-            <a
-              href="#tax-exemption"
-              className="flex items-center gap-1 hover:text-brand-500 transition-colors"
-            >
-              <span>Tax Exemption Certificates</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
+                    <div className="flex items-center justify-between pt-3 border-t border-[#0e355c]/60 text-xs font-mono text-slate-400">
+                      <span>
+                        {method.brand === 'usdc' ? 'Non-Custodial' : `Expires ${method.expMonth}/${method.expYear}`}
+                      </span>
+
+                      {!method.isDefault && (
+                        <button
+                          onClick={() => handleRemove(method.id)}
+                          className="p-1 rounded text-slate-500 hover:text-rose-400 transition-colors"
+                          title="Delete payment source"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span>Showing 1 to {invoicesData.length} of 24 invoices</span>
-            <div className="inline-flex items-center gap-1">
-              <button
-                disabled
-                className="p-1 rounded border border-slate-200 dark:border-slate-700/80 disabled:opacity-40 text-slate-500"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              <button className="p-1 rounded border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300">
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
+          {/* Billing Contact & Tax Profile */}
+          <div className="rounded-2xl bg-[#06182e]/80 border border-[#0d3b66] p-6 shadow-2xl backdrop-blur-2xl space-y-4">
+            <div className="flex items-center gap-2 border-b border-[#0d3b66] pb-3">
+              <Building2 className="w-4 h-4 text-cyan-400" />
+              <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                CORPORATE INVOICING REQUISITES
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+              <div className="p-3.5 rounded-xl bg-[#030e1d] border border-[#0e355c]">
+                <span className="text-slate-500 block text-[10px] uppercase">Finance Department Email</span>
+                <span className="text-slate-200 mt-1 block">{data?.settings.billingEmail}</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-[#030e1d] border border-[#0e355c]">
+                <span className="text-slate-500 block text-[10px] uppercase">Registered Tax / VAT ID</span>
+                <span className="text-slate-200 mt-1 block">{data?.settings.taxId}</span>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Right 1 Col: Autonomous Top-Up Trigger */}
+        <div className="space-y-6">
+          <form
+            onSubmit={handleSaveSettings}
+            className="rounded-3xl bg-gradient-to-b from-[#081e3a] to-[#041022] border border-[#103a68] p-6 shadow-2xl space-y-6"
+          >
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-amber-400" />
+              <div>
+                <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                  AUTONOMOUS AUTO-REFILL
+                </h3>
+                <p className="text-[11px] text-slate-400">Zero-downtime balance protection</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 flex items-start gap-2.5 font-sans">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+              <span>When your gateway escrow falls below the set threshold, it will automatically bill your primary card.</span>
+            </div>
+
+            {/* Toggle switch */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#030e1d] border border-[#0e355c]">
+              <span className="text-xs font-mono text-white">Enable Auto-TopUp</span>
+              <button
+                type="button"
+                onClick={() => setAutoRecharge(!autoRecharge)}
+                className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${
+                  autoRecharge ? 'bg-cyan-500' : 'bg-slate-700'
+                }`}
+              >
+                <div
+                  className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
+                    autoRecharge ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Threshold Input */}
+            <div className="space-y-1.5 font-mono text-xs">
+              <label className="block text-slate-400 uppercase text-[10px]">
+                Trigger When Balance Hits ($ USD)
+              </label>
+              <input
+                type="number"
+                step="5.00"
+                disabled={!autoRecharge}
+                value={threshold}
+                onChange={(e) => setThreshold(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500 disabled:opacity-40"
+              />
+            </div>
+
+            {/* Top-up Amount Input */}
+            <div className="space-y-1.5 font-mono text-xs">
+              <label className="block text-slate-400 uppercase text-[10px]">
+                Automatic Recharge Sum ($ USD)
+              </label>
+              <input
+                type="number"
+                step="10.00"
+                disabled={!autoRecharge}
+                value={rechargeAmount}
+                onChange={(e) => setRechargeAmount(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500 disabled:opacity-40"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-xs font-mono font-bold tracking-wider transition-all shadow-[0_0_15px_rgba(6,182,212,0.25)] flex items-center justify-center gap-2"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              <span>{saveSuccess ? 'CONFIG APPLIED!' : 'UPDATE BILLING RULES'}</span>
+            </button>
+          </form>
+
+          {/* Security Notice */}
+          <div className="p-4 rounded-2xl bg-[#06182e]/50 border border-[#0d3b66] text-xs text-slate-400 flex items-start gap-2.5 font-sans">
+            <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+            <span>All credentials and tokens are processed via 256-bit AES end-to-end cryptographic vaults.</span>
+          </div>
+        </div>
       </div>
+
+      {/* Add Card Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="bg-[#051427] border border-[#0e355c] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between border-b border-[#0d3b66] pb-3">
+              <div>
+                <h2 className="text-base font-bold text-white font-mono flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-cyan-400" />
+                  ATTACH PAYMENT SOURCE
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5 font-sans">Card details are tokenized securely.</p>
+              </div>
+              <button 
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-1.5 rounded-lg bg-[#08203d] text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCard} className="space-y-4 font-mono text-xs">
+              <div>
+                <label className="block text-slate-400 mb-1">CARD NUMBER</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="4242 •••• •••• 4242"
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500 font-mono tracking-widest"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1">CARDHOLDER NAME</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. John Doe / Company LLC"
+                  value={cardHolder}
+                  onChange={(e) => setCardHolder(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500 font-sans"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">EXPIRY (MM/YY)</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="12/28"
+                    value={cardExp}
+                    onChange={(e) => setCardExp(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">CVC / CVV</label>
+                  <input
+                    type="password"
+                    maxLength={4}
+                    required
+                    placeholder="•••"
+                    value={cardCvc}
+                    onChange={(e) => setCardCvc(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-[#0d3b66]">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl bg-[#08203d] hover:bg-[#0a2a50] text-slate-300 font-semibold text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold text-xs font-mono shadow-[0_0_15px_rgba(6,182,212,0.25)]"
+                >
+                  TOKENIZE & ATTACH
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

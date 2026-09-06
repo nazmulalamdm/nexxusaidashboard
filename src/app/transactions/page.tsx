@@ -1,253 +1,287 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import {
-  Coins,
-  ArrowDownLeft,
-  ArrowUpRight,
+import { useState, useEffect } from 'react';
+import { 
+  getTransactionsLedger, 
+  TransactionsSummary, 
+  TransactionRecord, 
+  TransactionType 
+} from '@/server/actions/transactions';
+import { 
+  CreditCard, 
+  ArrowDownLeft, 
+  ArrowUpRight, 
+  Search, 
+  CheckCircle2, 
+  AlertOctagon, 
+  Clock, 
+  ShieldCheck, 
+  Download, 
+  RefreshCw, 
+  Coins, 
+  Cpu, 
   Filter,
-  Download,
-  Search,
-  CheckCircle2,
-  Clock,
   Layers,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+  Receipt
+} from 'lucide-react';
 
-const tokenTransactions = [
-  {
-    id: "tx_9018bf",
-    tenant: "Cognitive Studio",
-    modelCluster: "Claude 3.5 Sonnet",
-    type: "Ingestion Burn",
-    tokens: "4.82M",
-    cost: "$14.46",
-    timestamp: "10:58:32 UTC",
-    status: "Settled",
-  },
-  {
-    id: "tx_8812ca",
-    tenant: "OpenAI Dev Lab",
-    modelCluster: "GPT-4o Dedicated",
-    type: "Quota Pre-pay",
-    tokens: "25.00M",
-    cost: "$75.00",
-    timestamp: "10:54:15 UTC",
-    status: "Settled",
-  },
-  {
-    id: "tx_7741ef",
-    tenant: "NeuroFlow SaaS",
-    modelCluster: "DeepSeek R1 Mesh",
-    type: "Burst Compute",
-    tokens: "1.25M",
-    cost: "$2.50",
-    timestamp: "10:50:02 UTC",
-    status: "Processing",
-  },
-  {
-    id: "tx_6650da",
-    tenant: "Synthetix Media",
-    modelCluster: "SDXL Ingestion",
-    type: "Ingestion Burn",
-    tokens: "850K",
-    cost: "$6.80",
-    timestamp: "10:45:19 UTC",
-    status: "Settled",
-  },
-  {
-    id: "tx_5549ac",
-    tenant: "HyperScale Corp",
-    modelCluster: "Llama 3.1 70B",
-    type: "Over-Quota Egress",
-    tokens: "3.10M",
-    cost: "$9.30",
-    timestamp: "10:39:40 UTC",
-    status: "Settled",
-  },
-  {
-    id: "tx_4418fa",
-    tenant: "AutoAgent Systems",
-    modelCluster: "Mistral Large 2",
-    type: "Ingestion Burn",
-    tokens: "920K",
-    cost: "$2.76",
-    timestamp: "10:32:11 UTC",
-    status: "Settled",
-  },
-];
+export default function TransactionsPage() {
+  const [data, setData] = useState<TransactionsSummary | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<string>('ALL');
 
-export default function TokenTelemetryPage() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const fetchLedger = async () => {
+    setIsLoading(true);
+    const res = await getTransactionsLedger();
+    setData(res);
+    setIsLoading(false);
+  };
 
-  const filteredData = tokenTransactions.filter(
-    (tx) =>
-      tx.tenant.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tx.modelCluster.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tx.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  useEffect(() => {
+    fetchLedger();
+  }, []);
+
+  const filteredTransactions = data?.transactions.filter((tx) => {
+    const matchesSearch = tx.txHash.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          tx.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (tx.modelRoute && tx.modelRoute.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesType = selectedType === 'ALL' || tx.type === selectedType;
+    return matchesSearch && matchesType;
+  }) || [];
 
   return (
-    <div className="space-y-4 max-w-[1600px] mx-auto select-none pt-1">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-[#272b40] p-4 rounded-xl border border-slate-200 dark:border-slate-700/80 shadow-xs">
+    <div className="space-y-8 pb-10">
+      {/* Top Banner Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#0e2a47] pb-6">
         <div>
-          <h1 className="text-sm sm:text-base font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-            Token Ingestion & Telemetry Settlements
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Real-time multi-tenant token deductions, compute cost allocation, and ledger audit
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-white font-mono flex items-center gap-2.5">
+              <Receipt className="w-6 h-6 text-cyan-400" />
+              FINANCIAL LEDGER & TRANSACTIONS
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+              AUDITED MICRO-SETTLEMENTS
+            </span>
+          </div>
+          <p className="text-slate-400 text-sm mt-1 font-sans">
+            Immutable settlement stream of inference compute micro-debits, escrow deposits, and fee adjustments.
           </p>
         </div>
-        <button className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#7367f0] hover:bg-[#685dd8] text-white rounded-md text-xs font-medium transition-all self-start sm:self-auto shadow-xs">
-          <Download className="w-3.5 h-3.5" />
-          <span>Export Ledger</span>
-        </button>
-      </div>
 
-      {/* 3 Telemetry Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="p-3.5 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-            <span>24h Ingestion Burn</span>
-            <Coins className="w-3.5 h-3.5 text-[#7367f0]" />
-          </div>
-          <div className="text-lg font-bold font-mono text-slate-900 dark:text-slate-100">
-            35.94M <span className="text-xs font-normal text-slate-400">Tokens</span>
-          </div>
-          <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">
-            Directly mapped to compute pods
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-            <span>Settled Ledger Value</span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
-          </div>
-          <div className="text-lg font-bold font-mono text-slate-900 dark:text-slate-100">
-            $110.82
-          </div>
-          <div className="mt-1 text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-            Rolling hourly aggregate
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-xl bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-            <span>Mesh Pipeline Quota</span>
-            <Layers className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400" />
-          </div>
-          <div className="text-lg font-bold font-mono text-slate-900 dark:text-slate-100">
-            88.4% <span className="text-xs font-normal text-slate-400">Healthy</span>
-          </div>
-          <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">
-            Zero dropouts across 128 pods
-          </div>
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search transaction ID, tenant, or model..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 rounded-lg text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:border-[#7367f0]"
-          />
-        </div>
-
-        <div className="flex items-center gap-2 self-end sm:self-auto text-xs">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 rounded-lg text-slate-600 dark:text-slate-300">
-            <Filter className="w-3 h-3 text-[#7367f0]" />
-            <span>Filter Type</span>
+        <div className="flex items-center gap-2.5 self-start md:self-auto">
+          <button
+            onClick={fetchLedger}
+            title="Refresh Ledger"
+            className="p-2.5 rounded-xl bg-[#08203d] hover:bg-[#0a2a50] border border-[#0d3b66] text-slate-300 hover:text-cyan-400 transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin text-cyan-400' : ''}`} />
+          </button>
+          <button
+            onClick={() => alert('Exporting full ledger audit (CSV)...')}
+            className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-sm font-semibold transition-all shadow-[0_0_20px_rgba(6,182,212,0.25)] flex items-center gap-2 font-mono"
+          >
+            <Download className="w-4 h-4" />
+            EXPORT LEDGER
           </button>
         </div>
       </div>
 
-      {/* Distinct Token Transaction Ledger Table */}
-      <div className="bg-white dark:bg-[#272b40] rounded-xl border border-slate-200 dark:border-slate-700/80 overflow-hidden shadow-xs">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[700px]">
-            <thead>
-              <tr className="text-[11px] font-semibold uppercase tracking-wider bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
-                <th className="py-2.5 px-4">Ledger ID</th>
-                <th className="py-2.5 px-4">Organization / Tenant</th>
-                <th className="py-2.5 px-4">Serving Architecture</th>
-                <th className="py-2.5 px-4">Type</th>
-                <th className="py-2.5 px-4 text-right">Tokens Consumed</th>
-                <th className="py-2.5 px-4 text-right">Cost (MTD)</th>
-                <th className="py-2.5 px-4 text-center">Settlement</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60 text-xs text-slate-600 dark:text-slate-300">
-              {filteredData.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
-                >
-                  <td className="py-2.5 px-4 font-mono text-[11px] font-medium text-[#7367f0]">
-                    {item.id}
-                  </td>
-                  <td className="py-2.5 px-4 font-medium text-slate-800 dark:text-slate-200">
-                    {item.tenant}
-                  </td>
-                  <td className="py-2.5 px-4 font-mono text-[11px] text-slate-600 dark:text-slate-300">
-                    {item.modelCluster}
-                  </td>
-                  <td className="py-2.5 px-4">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-mono text-slate-500 dark:text-slate-400">
-                      {item.type.includes("Burn") ? (
-                        <ArrowDownLeft className="w-3 h-3 text-amber-500" />
-                      ) : (
-                        <ArrowUpRight className="w-3 h-3 text-emerald-500" />
-                      )}
-                      {item.type}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-[11px] text-slate-800 dark:text-slate-200 font-semibold">
-                    {item.tokens}
-                  </td>
-                  <td className="py-2.5 px-4 text-right font-mono text-[11px] text-slate-800 dark:text-slate-200 font-bold">
-                    {item.cost}
-                  </td>
-                  <td className="py-2.5 px-4 text-center">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium border ${
-                        item.status === "Settled"
-                          ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20"
-                          : "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20"
-                      }`}
-                    >
-                      {item.status === "Settled" ? (
-                        <CheckCircle2 className="w-2.5 h-2.5" />
-                      ) : (
-                        <Clock className="w-2.5 h-2.5 animate-pulse" />
-                      )}
-                      {item.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Financial Metric Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Available Escrow */}
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-[#081e3a] to-[#041022] border border-[#103a68] shadow-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">ACTIVE ESCROW POOL</span>
+            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <p className="text-3xl font-black text-white font-mono tracking-tight">
+              ${data?.availableEscrowUsd.toFixed(2) || '0.00'}
+            </p>
+            <span className="text-[11px] font-mono text-cyan-400 mt-1 block">
+              ● Guaranteed compute liquidity
+            </span>
+          </div>
         </div>
 
-        {/* Distinct Pagination Footer */}
-        <div className="p-3 border-t border-slate-200 dark:border-slate-700/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-          <span className="font-mono text-[11px]">Showing 1 to 6 of 84 ledger entries</span>
-          <div className="flex items-center gap-1">
-            <button className="p-1 rounded border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40">
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-            <button className="p-1 rounded border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-800">
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+        {/* Gross Audited Volume */}
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-[#081e3a] to-[#041022] border border-[#103a68] shadow-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">TOTAL TRANSACTION VOLUME</span>
+            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/30">
+              <Coins className="w-4 h-4" />
+            </div>
           </div>
+          <div className="mt-3">
+            <p className="text-3xl font-black text-white font-mono tracking-tight">
+              ${data?.grossVolumeUsd.toFixed(4) || '0.0000'}
+            </p>
+            <span className="text-[11px] font-mono text-slate-400 mt-1 block">
+              Processed lifetime ledger
+            </span>
+          </div>
+        </div>
+
+        {/* Micro-Settled Calls */}
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-[#081e3a] to-[#041022] border border-[#103a68] shadow-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">SETTLED INFERENCES</span>
+            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/30">
+              <Cpu className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <p className="text-3xl font-black text-white font-mono tracking-tight">
+              {data?.totalSettledInferences || 0}
+            </p>
+            <span className="text-[11px] font-mono text-purple-300 mt-1 block">
+              Direct sub-cent settlements
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter & Omni Search Bar */}
+      <div className="p-4 rounded-2xl bg-[#06182e]/80 border border-[#0d3b66] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl backdrop-blur-xl">
+        <div className="flex items-center gap-2.5 w-full sm:w-80 px-3.5 py-2 rounded-xl bg-[#030e1d] border border-[#0e355c] focus-within:border-cyan-500 transition-colors">
+          <Search className="w-4 h-4 text-slate-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search tx hash, model, note..."
+            className="bg-transparent text-xs text-slate-200 outline-none w-full placeholder-slate-500 font-sans"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto font-mono text-xs">
+          {['ALL', 'INFERENCE_DEBIT', 'WALLET_TOPUP', 'REFUND_CREDIT'].map((type) => (
+            <button
+              key={type}
+              onClick={() => setSelectedType(type)}
+              className={`px-3 py-1.5 rounded-xl transition-all whitespace-nowrap ${
+                selectedType === type
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.15)] font-bold'
+                  : 'text-slate-400 hover:text-white hover:bg-[#08203d]'
+              }`}
+            >
+              {type === 'ALL' ? 'ALL LEDGERS' : type.replace('_', ' ')}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Ledger Stream Table */}
+      <div className="rounded-2xl bg-[#06182e]/80 border border-[#0d3b66] overflow-hidden backdrop-blur-2xl shadow-2xl">
+        <div className="p-5 border-b border-[#0d3b66] flex items-center justify-between bg-[#041224]/80">
+          <div className="flex items-center gap-2.5">
+            <Layers className="w-4 h-4 text-cyan-400" />
+            <h2 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
+              REAL-TIME TRANSACTION STREAM
+            </h2>
+          </div>
+          <span className="text-[11px] font-mono text-slate-400">
+            Showing {filteredTransactions.length} items
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-slate-300">
+            <thead className="bg-[#030e1d] text-[10px] uppercase font-mono tracking-widest text-cyan-400/80 border-b border-[#0d3b66]">
+              <tr>
+                <th className="px-6 py-4">Tx Hash & Event</th>
+                <th className="px-6 py-4">Classification</th>
+                <th className="px-6 py-4">Tokens Processed</th>
+                <th className="px-6 py-4">Debit / Credit (USD)</th>
+                <th className="px-6 py-4">Timestamp</th>
+                <th className="px-6 py-4 text-right">Verification</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#0d3b66]/60 font-mono text-xs">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-slate-500 font-mono text-xs">
+                    Replaying cryptographic settlement ledger...
+                  </td>
+                </tr>
+              ) : filteredTransactions.map((tx) => {
+                const isDebit = tx.type === 'INFERENCE_DEBIT';
+                const isTopup = tx.type === 'WALLET_TOPUP';
+
+                return (
+                  <tr key={tx.id} className="hover:bg-[#0a2342]/40 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-white flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-[#030e1d] border border-[#0e355c] text-cyan-400 text-[11px]">
+                          {tx.txHash}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-sans mt-1">
+                        {tx.description}
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                          isTopup
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                            : isDebit
+                            ? 'bg-blue-500/10 text-blue-300 border border-blue-500/30'
+                            : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                        }`}
+                      >
+                        {isTopup ? <ArrowDownLeft className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />}
+                        {tx.type}
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4 text-slate-300">
+                      {tx.tokensProcessed ? (
+                        <span className="text-cyan-300">{tx.tokensProcessed.toLocaleString()} Tokens</span>
+                      ) : (
+                        <span className="text-slate-600">—</span>
+                      )}
+                    </td>
+
+                    <td className="px-6 py-4 font-bold">
+                      <span className={isTopup ? 'text-emerald-400' : isDebit ? 'text-cyan-400' : 'text-slate-400'}>
+                        {isTopup ? `+$${tx.amountUsd.toFixed(2)}` : `-$${tx.amountUsd.toFixed(6)}`}
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4 text-slate-400 text-[11px]">
+                      {new Date(tx.timestamp).toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                      })}
+                    </td>
+
+                    <td className="px-6 py-4 text-right">
+                      <span className="inline-flex items-center gap-1 text-emerald-400 text-[11px]">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        SETTLED
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {filteredTransactions.length === 0 && !isLoading && (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-slate-500 font-sans text-xs">
+                    No transactions matching your criteria found in ledger.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

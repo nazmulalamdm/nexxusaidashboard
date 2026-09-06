@@ -1,332 +1,192 @@
-"use client";
+import { getGatewayTrafficMetrics } from '@/server/actions/traffic';
+import { 
+  Activity, 
+  Cpu, 
+  Radio, 
+  Zap, 
+  ArrowUpRight, 
+  ShieldAlert, 
+  Clock, 
+  Layers, 
+  CheckCircle2, 
+  AlertTriangle 
+} from 'lucide-react';
 
-import React, { useState } from "react";
-import {
-  Search,
-  Filter,
-  Download,
-  Clock,
-  Zap,
-  CheckCircle2,
-  AlertTriangle,
-  Activity,
-  Gauge,
-  Layers,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+export const dynamic = 'force-dynamic';
 
-interface TokenLedgerEntry {
-  id: string;
-  timestamp: string;
-  model: string;
-  promptTokens: number;
-  completionTokens: number;
-  latencyMs: number;
-  status: 200 | 429 | 500;
-  cost: string;
-}
-
-const ledgerMockData: TokenLedgerEntry[] = [
-  {
-    id: "req_88a9f12c",
-    timestamp: "10:58:12.410",
-    model: "claude-3-5-sonnet",
-    promptTokens: 1420,
-    completionTokens: 382,
-    latencyMs: 480,
-    status: 200,
-    cost: "$0.0099",
-  },
-  {
-    id: "req_77c4d31e",
-    timestamp: "10:57:45.102",
-    model: "gpt-4o-mini",
-    promptTokens: 890,
-    completionTokens: 154,
-    latencyMs: 195,
-    status: 200,
-    cost: "$0.0002",
-  },
-  {
-    id: "req_99b2e04a",
-    timestamp: "10:56:19.824",
-    model: "deepseek-r1",
-    promptTokens: 3200,
-    completionTokens: 810,
-    latencyMs: 820,
-    status: 200,
-    cost: "$0.0041",
-  },
-  {
-    id: "req_12f8e99b",
-    timestamp: "10:55:03.015",
-    model: "llama-3.1-70b",
-    promptTokens: 412,
-    completionTokens: 0,
-    latencyMs: 42,
-    status: 429,
-    cost: "$0.0000",
-  },
-  {
-    id: "req_55d1c87f",
-    timestamp: "10:54:22.671",
-    model: "gpt-4o",
-    promptTokens: 2150,
-    completionTokens: 940,
-    latencyMs: 640,
-    status: 200,
-    cost: "$0.0201",
-  },
-  {
-    id: "req_66a1b209",
-    timestamp: "10:53:11.890",
-    model: "mistral-large-2",
-    promptTokens: 1100,
-    completionTokens: 320,
-    latencyMs: 310,
-    status: 200,
-    cost: "$0.0042",
-  },
-  {
-    id: "req_44c8e715",
-    timestamp: "10:52:05.114",
-    model: "claude-3-haiku",
-    promptTokens: 620,
-    completionTokens: 110,
-    latencyMs: 140,
-    status: 200,
-    cost: "$0.0002",
-  },
-  {
-    id: "req_33d99f01",
-    timestamp: "10:51:44.201",
-    model: "gemini-1.5-pro",
-    promptTokens: 4500,
-    completionTokens: 1200,
-    latencyMs: 910,
-    status: 200,
-    cost: "$0.0078",
-  },
-];
-
-export default function TransactionsPage() {
-  const [filterModel, setFilterModel] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const filteredData = ledgerMockData.filter((entry) => {
-    const matchesSearch =
-      entry.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.model.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesModel =
-      filterModel === "all" || entry.model.includes(filterModel);
-    return matchesSearch && matchesModel;
-  });
+export default async function GatewayTrafficPage() {
+  const data = await getGatewayTrafficMetrics();
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 max-w-[1600px] mx-auto">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+    <div className="space-y-8 pb-10">
+      {/* Top Banner Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#0e2a47] pb-6">
         <div>
-          <h1 className="text-base font-semibold text-slate-800 dark:text-slate-100 tracking-tight">
-            Token Ledger & Gateway Telemetry
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Immutable log of all inferred model calls, egress compute units, and execution latencies
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-white font-mono flex items-center gap-2.5">
+              <Radio className="w-6 h-6 text-cyan-400 animate-pulse" />
+              GATEWAY TRAFFIC DISPATCHER
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+              REAL-TIME LOAD
+            </span>
+          </div>
+          <p className="text-slate-400 text-sm mt-1 font-sans">
+            Monitor per-model reverse-proxy routing distributions, edge concurrency, and payload fault margins.
           </p>
         </div>
 
-        <button className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-[#272b40] text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 shadow-xs transition-colors">
-          <Download className="w-3.5 h-3.5 text-slate-400" />
-          <span>Export JSONL</span>
-        </button>
-      </div>
-
-      {/* 4 Gateway KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-3.5 rounded-lg bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-            <span>Mesh Throughput</span>
-            <Activity className="w-3.5 h-3.5 text-brand-500" />
-          </div>
-          <div className="text-base font-bold font-mono text-slate-800 dark:text-slate-100">
-            5.2k req / min
-          </div>
-          <div className="mt-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">
-            Optimal bandwidth
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-lg bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-            <span>Average P95 Latency</span>
-            <Gauge className="w-3.5 h-3.5 text-indigo-400" />
-          </div>
-          <div className="text-base font-bold font-mono text-slate-800 dark:text-slate-100">
-            218ms TTFT
-          </div>
-          <div className="mt-1.5 text-[11px] text-slate-400 font-mono">
-            Direct edge routes
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-lg bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-            <span>Daily Ingestion Quota</span>
-            <Zap className="w-3.5 h-3.5 text-emerald-500" />
-          </div>
-          <div className="text-base font-bold font-mono text-slate-800 dark:text-slate-100">
-            18.4M Tokens
-          </div>
-          <div className="mt-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">
-            +6.4% vs yesterday
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-lg bg-white dark:bg-[#272b40] border border-slate-200 dark:border-slate-700/80 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
-            <span>Gateway HTTP 200</span>
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-          </div>
-          <div className="text-base font-bold font-mono text-slate-800 dark:text-slate-100">
-            99.88%
-          </div>
-          <div className="mt-1.5 text-[11px] text-amber-500 font-mono">
-            0.12% 429 Limited
+        <div className="flex items-center gap-3">
+          <div className="px-3.5 py-1.5 rounded-xl bg-[#06182e] border border-[#0e355c] text-xs font-mono text-cyan-300 flex items-center gap-2 shadow-lg">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+            Active Route Mesh: {data.activeRoutes} Engines
           </div>
         </div>
       </div>
 
-      {/* Control Strip */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search request ID or endpoint stack..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 pr-3 py-1.5 rounded-md text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:border-brand-500 w-full sm:w-72"
-          />
+      {/* Real-time Dispatch Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-[#081e3a] to-[#041022] border border-[#103a68] shadow-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">INBOUND SAMPLING</span>
+            <Activity className="w-4 h-4 text-cyan-400" />
+          </div>
+          <p className="text-2xl font-black text-white font-mono mt-2">{data.totalInbound} Calls</p>
+          <span className="text-[11px] font-mono text-slate-500 mt-1 block">Analyzed buffer window</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <select
-            value={filterModel}
-            onChange={(e) => setFilterModel(e.target.value)}
-            className="px-2.5 py-1.5 rounded-md border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-[#272b40] text-xs text-slate-600 dark:text-slate-300 focus:outline-none"
-          >
-            <option value="all">All Architectural Stacks</option>
-            <option value="claude">Anthropic Claude</option>
-            <option value="gpt">OpenAI Models</option>
-            <option value="deepseek">DeepSeek Mesh</option>
-            <option value="llama">Meta Llama</option>
-          </select>
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-[#081e3a] to-[#041022] border border-[#103a68] shadow-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">PEAK CONCURRENCY</span>
+            <Zap className="w-4 h-4 text-amber-400" />
+          </div>
+          <p className="text-2xl font-black text-white font-mono mt-2">{data.peakRpm} RPM</p>
+          <span className="text-[11px] font-mono text-amber-400/80 mt-1 block">Dynamic threshold</span>
+        </div>
+
+        <div className="p-5 rounded-2xl bg-gradient-to-b from-[#081e3a] to-[#041022] border border-[#103a68] shadow-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-slate-400">ANOMALY BUFFER</span>
+            <AlertTriangle className="w-4 h-4 text-rose-400" />
+          </div>
+          <p className="text-2xl font-black text-white font-mono mt-2">{data.recentErrors.length} Exceptions</p>
+          <span className="text-[11px] font-mono text-rose-400/80 mt-1 block">4xx / 5xx error events</span>
         </div>
       </div>
 
-      {/* Main Ledger Table */}
-      <div className="bg-white dark:bg-[#272b40] rounded-lg border border-slate-200 dark:border-slate-700/80 overflow-hidden shadow-xs">
+      {/* Model Route Distribution Grid */}
+      <div className="rounded-2xl bg-[#06182e]/80 border border-[#0d3b66] overflow-hidden backdrop-blur-2xl shadow-2xl">
+        <div className="p-5 border-b border-[#0d3b66] flex items-center justify-between bg-[#041224]/80">
+          <div className="flex items-center gap-2.5">
+            <Cpu className="w-4 h-4 text-cyan-400" />
+            <h2 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
+              MODEL INFERENCE ROUTING BREAKDOWN
+            </h2>
+          </div>
+          <span className="text-[11px] font-mono text-slate-400">Load Weighted</span>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="text-[11px] font-semibold uppercase tracking-wider bg-slate-50 dark:bg-slate-900/60 text-slate-400 border-b border-slate-200 dark:border-slate-700/80">
-                <th className="py-2.5 px-4">Request Log ID</th>
-                <th className="py-2.5 px-4">Timestamp (UTC)</th>
-                <th className="py-2.5 px-4">Endpoint Stack</th>
-                <th className="py-2.5 px-4 text-right">Prompt / Completion</th>
-                <th className="py-2.5 px-4 text-right">TTFT Latency</th>
-                <th className="py-2.5 px-4 text-center">Gateway Status</th>
-                <th className="py-2.5 px-4 text-right">Subtotal</th>
+          <table className="w-full text-left text-sm text-slate-300">
+            <thead className="bg-[#030e1d] text-[10px] uppercase font-mono tracking-widest text-cyan-400/80 border-b border-[#0d3b66]">
+              <tr>
+                <th className="px-6 py-4">Target Model Route</th>
+                <th className="px-6 py-4">Total Requests</th>
+                <th className="px-6 py-4">Token Volume</th>
+                <th className="px-6 py-4">Avg Latency</th>
+                <th className="px-6 py-4">Status Distribution (2xx / 4xx / 5xx)</th>
+                <th className="px-6 py-4">Fault Margin</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60 text-xs text-slate-600 dark:text-slate-300">
-              {filteredData.map((entry) => {
-                const isSuccess = entry.status === 200;
-                return (
-                  <tr
-                    key={entry.id}
-                    className="hover:bg-slate-50/70 dark:hover:bg-slate-700/30 transition-colors"
-                  >
-                    <td className="py-2.5 px-4 font-mono text-[11px] font-medium text-brand-500">
-                      {entry.id}
-                    </td>
-                    <td className="py-2.5 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3 h-3 text-slate-400" />
-                        <span>{entry.timestamp}</span>
-                      </div>
-                    </td>
-                    <td className="py-2.5 px-4">
-                      <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/80">
-                        {entry.model}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-4 text-right font-mono text-[11px]">
-                      <span className="text-slate-400">{entry.promptTokens}</span>
-                      <span className="text-slate-300 dark:text-slate-600 mx-1">/</span>
-                      <span className="text-indigo-400 font-medium">
-                        {entry.completionTokens}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-4 text-right font-mono text-[11px]">
-                      <span
-                        className={
-                          entry.latencyMs < 300
-                            ? "text-emerald-400"
-                            : "text-amber-400"
-                        }
-                      >
-                        {entry.latencyMs}ms
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-4 text-center">
-                      <span
-                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium border ${
-                          isSuccess
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                            : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
-                        }`}
-                      >
-                        {isSuccess ? (
-                          <CheckCircle2 className="w-2.5 h-2.5" />
-                        ) : (
-                          <AlertTriangle className="w-2.5 h-2.5" />
-                        )}
-                        {entry.status} {isSuccess ? "OK" : "Limit"}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-4 text-right font-mono text-xs font-semibold text-slate-800 dark:text-slate-100">
-                      {entry.cost}
-                    </td>
-                  </tr>
-                );
-              })}
+            <tbody className="divide-y divide-[#0d3b66]/60 font-mono text-xs">
+              {data.modelsTraffic.map((item) => (
+                <tr key={item.model} className="hover:bg-[#0a2342]/40 transition-colors">
+                  <td className="px-6 py-4 font-bold text-white flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                    {item.model}
+                  </td>
+                  <td className="px-6 py-4 text-slate-200">{item.totalRequests}</td>
+                  <td className="px-6 py-4 text-cyan-300">{item.totalTokens.toLocaleString()}</td>
+                  <td className="px-6 py-4 text-slate-400">{item.avgLatencyMs} ms</td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                      <span className="text-emerald-400">{item.status2xx} OK</span>
+                      <span className="text-slate-600">/</span>
+                      <span className="text-amber-400">{item.status4xx} 4xx</span>
+                      <span className="text-slate-600">/</span>
+                      <span className="text-rose-400">{item.status5xx} 5xx</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        item.errorRate === 0
+                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                      }`}
+                    >
+                      {item.errorRate}%
+                    </span>
+                  </td>
+                </tr>
+              ))}
+              {data.modelsTraffic.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-slate-500">
+                    No active routing telemetry logs detected.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
+      </div>
 
-        {/* Footer & Pagination */}
-        <div className="p-3 bg-slate-50/50 dark:bg-slate-900/40 border-t border-slate-200 dark:border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400 font-mono">
-          <div className="flex items-center gap-2">
-            <Zap className="w-3.5 h-3.5 text-emerald-500" />
-            <span>Zero Egress Dropped (Cluster 01)</span>
+      {/* Anomaly / Failed Request Buffer */}
+      <div className="rounded-2xl bg-[#06182e]/80 border border-[#0d3b66] overflow-hidden backdrop-blur-2xl shadow-2xl">
+        <div className="p-5 border-b border-[#0d3b66] flex items-center justify-between bg-[#041224]/80">
+          <div className="flex items-center gap-2.5">
+            <ShieldAlert className="w-4 h-4 text-rose-400" />
+            <h2 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
+              RECENT ROUTING ANOMALIES & EXCEPTION LOGS
+            </h2>
           </div>
+        </div>
 
-          <div className="flex items-center gap-3">
-            <span>Showing 1 to {filteredData.length} of 4.2k logs</span>
-            <div className="inline-flex items-center gap-1">
-              <button
-                disabled
-                className="p-1 rounded border border-slate-200 dark:border-slate-700/80 disabled:opacity-40 text-slate-500"
-              >
-                <ChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              <button className="p-1 rounded border border-slate-200 dark:border-slate-700/80 hover:bg-slate-100 dark:hover:bg-slate-700/50 text-slate-600 dark:text-slate-300">
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm text-slate-300">
+            <thead className="bg-[#030e1d] text-[10px] uppercase font-mono tracking-widest text-rose-400/80 border-b border-[#0d3b66]">
+              <tr>
+                <th className="px-6 py-3.5">Timestamp</th>
+                <th className="px-6 py-3.5">Failing Route</th>
+                <th className="px-6 py-3.5">HTTP Status</th>
+                <th className="px-6 py-3.5">Elapsed Latency</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#0d3b66]/60 font-mono text-xs">
+              {data.recentErrors.map((err) => (
+                <tr key={err.id} className="hover:bg-rose-950/20 transition-colors">
+                  <td className="px-6 py-3.5 text-slate-400">
+                    {new Date(err.createdAt).toLocaleTimeString()}
+                  </td>
+                  <td className="px-6 py-3.5 text-white">{err.model}</td>
+                  <td className="px-6 py-3.5">
+                    <span className="px-2 py-0.5 rounded bg-rose-950 border border-rose-800 text-rose-300 font-bold">
+                      HTTP {err.statusCode}
+                    </span>
+                  </td>
+                  <td className="px-6 py-3.5 text-slate-400">{err.latencyMs} ms</td>
+                </tr>
+              ))}
+              {data.recentErrors.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="text-center py-8 text-emerald-400/80 text-xs">
+                    Clean edge state: zero exception anomalies in current telemetry window.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

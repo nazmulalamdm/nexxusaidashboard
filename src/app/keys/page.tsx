@@ -1,428 +1,402 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { 
+  getApiKeys, 
+  createApiKey, 
+  toggleApiKeyStatus, 
+  deleteApiKey, 
+  ApiKeyItem 
+} from '@/server/actions/keys';
 import { 
   Key, 
-  ShieldCheck, 
   Plus, 
   Copy, 
   Check, 
   Trash2, 
-  Eye, 
-  EyeOff, 
-  Sliders, 
-  RotateCw, 
-  Lock, 
-  AlertCircle,
+  Power, 
+  ShieldAlert, 
+  Loader2,
+  Lock,
+  Gauge,
+  ShieldCheck,
+  Zap,
   Activity,
-  Layers,
-  Sparkles
+  X
 } from 'lucide-react';
 
-interface ApiKeyItem {
-  id: string;
-  name: string;
-  prefix: string;
-  secret: string;
-  environment: 'production' | 'staging' | 'development';
-  rateLimitRpm: number;
-  monthlySpendCap: number;
-  currentSpend: number;
-  allowedModels: string[];
-  lastUsed: string;
-  createdAt: string;
-  status: 'active' | 'revoked';
-}
+export default function KeysPage() {
+  const [keys, setKeys] = useState<ApiKeyItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-const INITIAL_KEYS: ApiKeyItem[] = [
-  {
-    id: 'key-1',
-    name: 'Mobile App Gateway Service',
-    prefix: 'tk_live_94f8...',
-    secret: 'tk_live_94f8b210c49e782a1d0f88e1a',
-    environment: 'production',
-    rateLimitRpm: 1200,
-    monthlySpendCap: 500,
-    currentSpend: 142.80,
-    allowedModels: ['gpt-4o', 'claude-3-5-sonnet'],
-    lastUsed: '2 minutes ago',
-    createdAt: 'Jan 14, 2026',
-    status: 'active'
-  },
-  {
-    id: 'key-2',
-    name: 'Enterprise Batch Ingestion Cron',
-    prefix: 'tk_live_83a1...',
-    secret: 'tk_live_83a17e04f98129cc6b7a54a2',
-    environment: 'production',
-    rateLimitRpm: 4500,
-    monthlySpendCap: 1500,
-    currentSpend: 890.15,
-    allowedModels: ['deepseek-r1', 'llama-3-1-70b'],
-    lastUsed: 'Just now',
-    createdAt: 'Feb 02, 2026',
-    status: 'active'
-  },
-  {
-    id: 'key-3',
-    name: 'Staging Integration Sandbox',
-    prefix: 'tk_test_12c9...',
-    secret: 'tk_test_12c9ff45a892b31cd8001e3b',
-    environment: 'staging',
-    rateLimitRpm: 300,
-    monthlySpendCap: 100,
-    currentSpend: 18.40,
-    allowedModels: ['gpt-4o', 'deepseek-r1'],
-    lastUsed: '4 hours ago',
-    createdAt: 'Aug 10, 2026',
-    status: 'active'
-  },
-  {
-    id: 'key-4',
-    name: 'Legacy Microservice Token',
-    prefix: 'tk_live_00d4...',
-    secret: 'tk_live_00d481ab7612c0199f1100aa',
-    environment: 'production',
-    rateLimitRpm: 60,
-    monthlySpendCap: 50,
-    currentSpend: 49.90,
-    allowedModels: ['gpt-4o'],
-    lastUsed: '3 days ago',
-    createdAt: 'Dec 01, 2025',
-    status: 'revoked'
-  }
-];
+  // Form State
+  const [name, setName] = useState('');
+  const [budgetCap, setBudgetCap] = useState('25.00');
+  const [rateLimitRpm, setRateLimitRpm] = useState('120');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-export default function ApiKeysVaultPage() {
-  const [keys, setKeys] = useState<ApiKeyItem[]>(INITIAL_KEYS);
-  const [showModal, setShowModal] = useState(false);
-  const [newKeyName, setNewKeyName] = useState('');
-  const [newEnv, setNewEnv] = useState<'production' | 'staging' | 'development'>('production');
-  const [newRpm, setNewRpm] = useState(600);
-  const [newCap, setNewCap] = useState(250);
-  const [revealedKeyId, setRevealedKeyId] = useState<string | null>(null);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-
-  const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+  const fetchKeys = async () => {
+    setIsLoading(true);
+    const data = await getApiKeys();
+    setKeys(data);
+    setIsLoading(false);
   };
 
-  const handleCreateKey = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchKeys();
+  }, []);
+
+  const handleCreateKey = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newKeyName.trim()) return;
-
-    const randomHash = Math.random().toString(36).substring(2, 12) + Math.random().toString(36).substring(2, 10);
-    const prefixStr = newEnv === 'production' ? 'tk_live_' : 'tk_test_';
-    const fullSecret = `${prefixStr}${randomHash}`;
-
-    const newKey: ApiKeyItem = {
-      id: `key-${Date.now()}`,
-      name: newKeyName,
-      prefix: `${fullSecret.substring(0, 11)}...`,
-      secret: fullSecret,
-      environment: newEnv,
-      rateLimitRpm: newRpm,
-      monthlySpendCap: newCap,
-      currentSpend: 0.00,
-      allowedModels: ['gpt-4o', 'claude-3-5-sonnet', 'deepseek-r1'],
-      lastUsed: 'Never',
-      createdAt: 'Just now',
-      status: 'active'
-    };
-
-    setKeys([newKey, ...keys]);
-    setNewKeyName('');
-    setShowModal(false);
+    setIsSubmitting(true);
+    try {
+      const res = await createApiKey({
+        name,
+        budgetCap: parseFloat(budgetCap) || 10,
+        rateLimitRpm: parseInt(rateLimitRpm, 10) || 60,
+      });
+      setNewlyCreatedKey(res.secretKey);
+      setName('');
+      fetchKeys();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to generate API Key';
+      alert(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleRevoke = (id: string) => {
-    setKeys(keys.map(k => k.id === id ? { ...k, status: 'revoked' } : k));
+  const handleToggleStatus = async (id: string, status: boolean) => {
+    await toggleApiKeyStatus(id, status);
+    fetchKeys();
   };
 
-  const totalMonthlySpend = keys.reduce((acc, k) => acc + (k.status === 'active' ? k.currentSpend : 0), 0);
-  const activeKeysCount = keys.filter(k => k.status === 'active').length;
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to permanently delete this API Key? Any application using this key will immediately lose access.')) {
+      await deleteApiKey(id);
+      fetchKeys();
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div className="min-h-screen bg-[#07090E] text-slate-100 p-6 lg:p-10 space-y-8 font-sans">
-      
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800/80 pb-6">
+    <div className="space-y-8 pb-10">
+      {/* Top Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#0e2a47] pb-6">
         <div>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-purple-600/10 border border-purple-500/30 text-purple-400">
-              <Key className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
-                API Key Vault & Rate Enclaves
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  Ed25519 Encrypted
-                </span>
-              </h1>
-              <p className="text-sm text-slate-400 mt-1">
-                Provision programmatic authentication tokens, configure RPM velocity throttles, and set quota caps.
-              </p>
-            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-white font-mono flex items-center gap-2.5">
+              <Key className="w-6 h-6 text-cyan-400" />
+              API Key Vault
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+              SHA-256 Encrypted
+            </span>
           </div>
+          <p className="text-slate-400 text-sm mt-1 font-sans">
+            Manage client secret tokens, enforce budget caps, and monitor per-key rate limits for TechknowPointAI proxies.
+          </p>
         </div>
 
-        <button 
-          onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-sm font-semibold text-white transition-all shadow-md shadow-purple-600/20"
+        <button
+          onClick={() => {
+            setNewlyCreatedKey(null);
+            setIsModalOpen(true);
+          }}
+          className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl text-sm font-semibold transition-all shadow-[0_0_20px_rgba(6,182,212,0.25)] flex items-center gap-2 self-start md:self-auto font-sans"
         >
-          <Plus className="w-4 h-4" /> Generate Secret Key
+          <Plus className="w-4 h-4" />
+          Create New API Key
         </button>
       </div>
 
-      {/* Top Telemetry Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl bg-[#0D121F] border border-slate-800 shadow-lg">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Active Enclave Keys</span>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold font-mono text-white">{activeKeysCount}</span>
-            <span className="text-xs text-slate-500">/ {keys.length} total</span>
+      {/* KPI Overview Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="p-4 rounded-2xl bg-[#06182e]/80 border border-[#0d3b66] shadow-xl flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+            <ShieldCheck className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">Active Keys</span>
+            <span className="text-xl font-bold font-mono text-white">
+              {keys.filter((k) => k.is_active).length} / {keys.length} Active
+            </span>
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-[#0D121F] border border-slate-800 shadow-lg">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Gateway Spend MTD</span>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold font-mono text-emerald-400">${totalMonthlySpend.toFixed(2)}</span>
-            <span className="text-xs text-slate-500">USD</span>
+        <div className="p-4 rounded-2xl bg-[#06182e]/80 border border-[#0d3b66] shadow-xl flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/30">
+            <Activity className="w-5 h-5 text-blue-400 animate-pulse" />
+          </div>
+          <div>
+            <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">Access Gateway</span>
+            <span className="text-xl font-bold font-mono text-cyan-300">Reverse Proxy</span>
           </div>
         </div>
 
-        <div className="p-5 rounded-2xl bg-[#0D121F] border border-slate-800 shadow-lg">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Throughput Enforcement</span>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold font-mono text-purple-400">Sliding Window</span>
-            <span className="text-xs text-slate-500">Redis</span>
+        <div className="p-4 rounded-2xl bg-[#06182e]/80 border border-[#0d3b66] shadow-xl flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/30">
+            <Zap className="w-5 h-5" />
           </div>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-[#0D121F] border border-slate-800 shadow-lg">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Hardware Vault Status</span>
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-400 font-mono">
-            <ShieldCheck className="w-4 h-4" /> HS-256 Validated
+          <div>
+            <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">Rate Throttling</span>
+            <span className="text-xl font-bold font-mono text-purple-300">RPM Enforced</span>
           </div>
         </div>
       </div>
 
-      {/* API Keys Table */}
-      <div className="rounded-2xl bg-[#0D121F] border border-slate-800 shadow-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-800/80 flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-            <Lock className="w-4 h-4 text-purple-400" /> Provisioned Gateway Tokens
-          </h2>
-          <span className="text-xs text-slate-500 font-mono">Auto-rotates in 90 days</span>
+      {/* Keys Table Container */}
+      <div className="rounded-2xl bg-[#06182e]/80 border border-[#0d3b66] overflow-hidden backdrop-blur-2xl shadow-2xl">
+        <div className="p-5 border-b border-[#0d3b66] flex items-center justify-between bg-[#041224]/80">
+          <div className="flex items-center gap-2.5">
+            <Key className="w-4 h-4 text-cyan-400" />
+            <h2 className="text-xs font-mono font-bold tracking-widest text-white uppercase">
+              AUTHENTICATION TOKENS
+            </h2>
+          </div>
+          <span className="text-[11px] font-mono text-slate-400">
+            {keys.length} keys total
+          </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-[#090D17]">
-                <th className="py-3 px-6">Key Identifier</th>
-                <th className="py-3 px-4">Environment</th>
-                <th className="py-3 px-4">Secret Token</th>
-                <th className="py-3 px-4">Rate Cap (RPM)</th>
-                <th className="py-3 px-4">Budget Utilization</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-6 text-right">Actions</th>
+          <table className="w-full text-left text-sm text-slate-300">
+            <thead className="bg-[#030e1d] text-[10px] uppercase font-mono tracking-widest text-cyan-400/80 border-b border-[#0d3b66]">
+              <tr>
+                <th className="px-6 py-4">Key Name</th>
+                <th className="px-6 py-4">Secret Prefix</th>
+                <th className="px-6 py-4">Budget / Spend</th>
+                <th className="px-6 py-4">Rate Limit</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60 text-xs">
-              {keys.map((k) => {
-                const isRevealed = revealedKeyId === k.id;
-                const spendPercentage = Math.min(100, Math.round((k.currentSpend / k.monthlySpendCap) * 100));
-
+            <tbody className="divide-y divide-[#0d3b66]/60">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-slate-500 font-mono text-xs">
+                    <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-cyan-400" />
+                    Loading security credentials...
+                  </td>
+                </tr>
+              ) : keys.map((key) => {
+                const percentSpent = Math.min(100, (key.current_spend / (key.monthly_budget_cap || 1)) * 100);
                 return (
-                  <tr key={k.id} className="hover:bg-slate-900/40 transition-colors">
-                    <td className="py-4 px-6">
-                      <div className="font-semibold text-white">{k.name}</div>
-                      <div className="text-[11px] text-slate-500 font-mono mt-0.5">Created: {k.createdAt} • Last: {k.lastUsed}</div>
-                    </td>
-
-                    <td className="py-4 px-4">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase border ${
-                        k.environment === 'production'
-                          ? 'border-purple-500/30 text-purple-300 bg-purple-500/10'
-                          : 'border-blue-500/30 text-blue-300 bg-blue-500/10'
-                      }`}>
-                        {k.environment}
-                      </span>
-                    </td>
-
-                    <td className="py-4 px-4 font-mono">
-                      <div className="flex items-center gap-2">
-                        <span className="bg-[#080B12] px-2 py-1 rounded border border-slate-800 text-slate-300 text-[11px]">
-                          {isRevealed ? k.secret : k.prefix}
-                        </span>
-                        <button
-                          onClick={() => setRevealedKeyId(isRevealed ? null : k.id)}
-                          className="text-slate-500 hover:text-slate-300 transition-colors"
-                          title={isRevealed ? 'Hide secret' : 'Reveal secret'}
-                        >
-                          {isRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                        <button
-                          onClick={() => handleCopy(k.id, k.secret)}
-                          className="text-slate-500 hover:text-purple-400 transition-colors"
-                          title="Copy to clipboard"
-                        >
-                          {copiedId === k.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
+                  <tr key={key.id} className="hover:bg-[#0a2342]/40 transition-colors">
+                    <td className="px-6 py-4 font-medium text-white">
+                      <div className="flex items-center gap-2.5">
+                        <Lock className="w-3.5 h-3.5 text-slate-500" />
+                        <div>
+                          <div className="text-sm font-semibold text-white">{key.name}</div>
+                          <div className="text-[11px] text-slate-500 font-sans">Created on {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                        </div>
                       </div>
                     </td>
-
-                    <td className="py-4 px-4 font-mono">
-                      <span className="text-slate-200 font-semibold">{k.rateLimitRpm}</span>
-                      <span className="text-slate-500 text-[11px]"> req/min</span>
+                    <td className="px-6 py-4 font-mono text-xs text-slate-400">
+                      <span className="px-2.5 py-1 rounded-lg bg-[#030e1d] border border-[#0e355c] text-cyan-300">
+                        {key.key_prefix}••••••••••••
+                      </span>
                     </td>
-
-                    <td className="py-4 px-4">
-                      <div className="w-36 space-y-1">
-                        <div className="flex justify-between text-[11px] font-mono">
-                          <span className="text-slate-300">${k.currentSpend.toFixed(2)}</span>
-                          <span className="text-slate-500">${k.monthlySpendCap}</span>
+                    <td className="px-6 py-4">
+                      <div className="space-y-1.5 w-44">
+                        <div className="flex justify-between text-xs font-mono">
+                          <span className="text-cyan-400 font-semibold">${key.current_spend.toFixed(4)}</span>
+                          <span className="text-slate-500">/ ${key.monthly_budget_cap.toFixed(2)}</span>
                         </div>
-                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="w-full h-1.5 bg-[#030e1d] rounded-full overflow-hidden border border-[#0e355c]/60">
                           <div
-                            className={`h-full rounded-full transition-all ${
-                              spendPercentage > 85 ? 'bg-red-500' : spendPercentage > 50 ? 'bg-amber-500' : 'bg-purple-500'
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              percentSpent > 85 ? 'bg-rose-500 shadow-[0_0_8px_#f43f5e]' : 'bg-cyan-400 shadow-[0_0_8px_#22d3ee]'
                             }`}
-                            style={{ width: `${spendPercentage}%` }}
+                            style={{ width: `${percentSpent}%` }}
                           />
                         </div>
                       </div>
                     </td>
-
-                    <td className="py-4 px-4">
-                      {k.status === 'active' ? (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20">
-                          Revoked
-                        </span>
-                      )}
+                    <td className="px-6 py-4 font-mono text-xs text-slate-300">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#041224] border border-[#0e355c]">
+                        <Gauge className="w-3.5 h-3.5 text-cyan-400" />
+                        {key.rate_limit_rpm} RPM
+                      </span>
                     </td>
-
-                    <td className="py-4 px-6 text-right">
-                      {k.status === 'active' ? (
-                        <button
-                          onClick={() => handleRevoke(k.id)}
-                          className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 text-xs transition-colors"
-                        >
-                          Revoke
-                        </button>
-                      ) : (
-                        <span className="text-slate-600 text-xs italic">Disabled</span>
-                      )}
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium ${
+                          key.is_active
+                            ? 'bg-cyan-500/10 text-cyan-300 border border-cyan-500/30'
+                            : 'bg-[#08203d] text-slate-500 border border-[#0d3b66]'
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${key.is_active ? 'bg-cyan-400' : 'bg-slate-500'}`} />
+                        {key.is_active ? 'Active' : 'Revoked'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      <button
+                        onClick={() => handleToggleStatus(key.id, key.is_active)}
+                        title={key.is_active ? 'Revoke Key' : 'Activate Key'}
+                        className="p-2 rounded-xl bg-[#08203d] hover:bg-[#0a2a50] border border-[#0d3b66] text-slate-400 hover:text-white transition-colors inline-flex"
+                      >
+                        <Power className={`w-3.5 h-3.5 ${key.is_active ? 'text-amber-400' : 'text-slate-500'}`} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(key.id)}
+                        title="Delete Key"
+                        className="p-2 rounded-xl bg-[#08203d] hover:bg-rose-950/60 border border-[#0d3b66] text-slate-400 hover:text-rose-400 transition-colors inline-flex"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </td>
                   </tr>
                 );
               })}
+              {!isLoading && keys.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-12 text-slate-500 font-sans text-xs">
+                    No API keys created yet. Click &quot;Create New API Key&quot; to get started.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Modal: Generate New Key */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-[#0D121F] border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Key className="w-5 h-5 text-purple-400" /> Create API Secret Key
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-slate-400 hover:text-white text-sm"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateKey} className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">Key Name / Consumer Purpose</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Next.js Edge Client, Mobile App Backend"
-                  value={newKeyName}
-                  onChange={(e) => setNewKeyName(e.target.value)}
-                  className="w-full bg-[#080B12] border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Environment</label>
-                  <select
-                    value={newEnv}
-                    onChange={(e) => setNewEnv(e.target.value as any)}
-                    className="w-full bg-[#080B12] border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+      {/* Creation Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="bg-[#051427] border border-[#0e355c] rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in duration-200">
+            {!newlyCreatedKey ? (
+              <>
+                <div className="flex items-center justify-between border-b border-[#0d3b66] pb-3">
+                  <div>
+                    <h2 className="text-base font-bold text-white font-mono">CREATE API KEY</h2>
+                    <p className="text-xs text-slate-400 mt-0.5 font-sans">Set name, monthly spend limit, and rate caps.</p>
+                  </div>
+                  <button 
+                    onClick={() => setIsModalOpen(false)}
+                    className="p-1.5 rounded-lg bg-[#08203d] text-slate-400 hover:text-white"
                   >
-                    <option value="production">Production</option>
-                    <option value="staging">Staging</option>
-                    <option value="development">Development</option>
-                  </select>
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">Rate Limit (RPM)</label>
+                <form onSubmit={handleCreateKey} className="space-y-4 text-xs">
+                  <div>
+                    <label className="block font-mono uppercase text-slate-400 mb-1.5">
+                      Key Label / Application Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Production Mobile App"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors font-sans"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-mono uppercase text-slate-400 mb-1.5">
+                        Budget Cap ($ USD)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        required
+                        value={budgetCap}
+                        onChange={(e) => setBudgetCap(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-sm text-white focus:outline-none focus:border-cyan-500 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-mono uppercase text-slate-400 mb-1.5">
+                        Rate Limit (RPM)
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        value={rateLimitRpm}
+                        onChange={(e) => setRateLimitRpm(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-sm text-white focus:outline-none focus:border-cyan-500 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2.5 pt-3 border-t border-[#0d3b66]">
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      className="px-4 py-2 rounded-xl bg-[#08203d] hover:bg-[#0a2a50] text-slate-300 font-semibold transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold transition-all shadow-[0_0_15px_rgba(6,182,212,0.25)] flex items-center gap-2"
+                    >
+                      {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                      Generate Key
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                    <Check className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-white font-mono">KEY GENERATED SUCCESSFULLY</h2>
+                    <p className="text-xs text-slate-400 font-sans">Save this key now. It will not be shown again.</p>
+                  </div>
+                </div>
+
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-2.5 text-xs text-amber-300 font-sans leading-relaxed">
+                  <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                  <span>For security reasons, your secret key cannot be recovered after leaving this screen. Store it in a secure password manager or environment file.</span>
+                </div>
+
+                <div className="flex items-center gap-2 bg-[#030e1d] border border-[#0e355c] p-3 rounded-xl">
                   <input
-                    type="number"
-                    min="10"
-                    max="10000"
-                    value={newRpm}
-                    onChange={(e) => setNewRpm(Number(e.target.value))}
-                    className="w-full bg-[#080B12] border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500 font-mono"
+                    type="text"
+                    readOnly
+                    value={newlyCreatedKey}
+                    className="bg-transparent font-mono text-xs text-cyan-300 outline-none flex-1 select-all"
                   />
+                  <button
+                    onClick={() => copyToClipboard(newlyCreatedKey)}
+                    className="p-2 bg-[#08203d] hover:bg-[#0a2a50] text-white rounded-lg transition-colors"
+                  >
+                    {copied ? <Check className="w-4 h-4 text-cyan-400" /> : <Copy className="w-4 h-4" />}
+                  </button>
                 </div>
-              </div>
 
-              <div>
-                <label className="text-xs font-semibold text-slate-300 block mb-1">Monthly Budget Cap ($ USD)</label>
-                <input
-                  type="number"
-                  min="5"
-                  max="10000"
-                  value={newCap}
-                  onChange={(e) => setNewCap(Number(e.target.value))}
-                  className="w-full bg-[#080B12] border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-purple-500 font-mono"
-                />
-              </div>
-
-              <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                <span>The full key secret will be hashed on your server. Make sure to copy the key immediately after creation.</span>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
                 <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setNewlyCreatedKey(null);
+                  }}
+                  className="w-full py-2.5 bg-[#08203d] hover:bg-[#0a2a50] text-white rounded-xl text-xs font-semibold transition-colors font-sans"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-xs font-bold text-white shadow-md shadow-purple-600/20"
-                >
-                  Create Key
+                  I Have Secured My Key
                 </button>
               </div>
-            </form>
+            )}
           </div>
         </div>
       )}
-
     </div>
   );
 }
