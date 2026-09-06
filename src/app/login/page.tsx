@@ -3,140 +3,137 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Terminal, Lock, Mail, Loader2, ArrowRight, Sparkles, Zap } from 'lucide-react';
+import { Terminal, Lock, Mail, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState('plan_pro');
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setError('');
+    setLoading(true);
 
-    // Set auth cookie & active plan securely
-    document.cookie = "tp_auth_token=active_jwt_session_2026; path=/; max-age=86400";
-    localStorage.setItem('tp_active_plan', selectedPlan);
+    try {
+      // সাধারণ ভ্যালিডেশন
+      if (!email || !password) {
+        throw new Error('Please fill in all fields');
+      }
 
-    setTimeout(() => {
-      setIsLoading(false);
-      router.push('/dashboard');
-    }, 800);
-  };
+      // TODO: এখানে আপনার রিয়েল ব্যাকএন্ড API কল করতে পারেন (যেমন: await fetch('/api/auth/login'))
+      await new Promise((resolve) => setTimeout(resolve, 800)); // সিমুলেশন ডিলে
 
-  const fillDemoAccount = (role: 'admin' | 'reviewer') => {
-    if (role === 'admin') {
-      setEmail('admin@techknowpoint.ai');
-      setPassword('elite_admin_2026');
-      setSelectedPlan('plan_enterprise');
-    } else {
-      setEmail('reviewer@themeforest.net');
-      setPassword('demo_preview_pass');
-      setSelectedPlan('plan_pro');
+      // সেশন কুকি সেট করা (১ দিনের মেয়াদ)
+      document.cookie = 'tp_auth_token=tp_valid_session_key; path=/; max-age=86400; SameSite=Lax';
+
+      // সফল লগইনের পর /overview-এ রিডাইরেক্ট
+      router.push('/overview');
+      router.refresh();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Authentication failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#030e1d] flex items-center justify-center px-4 font-sans selection:bg-cyan-500 selection:text-black relative overflow-hidden">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-cyan-500/10 blur-[140px] rounded-full pointer-events-none" />
+    <div className="min-h-screen bg-[#020b14] flex items-center justify-center p-4 selection:bg-cyan-500 selection:text-black">
+      {/* ব্যাকগ্রাউন্ড গ্লো ইফেক্ট */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/10 blur-[130px] rounded-full pointer-events-none" />
 
-      <div className="max-w-md w-full p-8 rounded-3xl bg-[#06182e]/90 border border-[#0d3b66] backdrop-blur-2xl shadow-2xl space-y-6 relative z-10">
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mx-auto shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-            <Terminal className="w-6 h-6" />
+      <div className="w-full max-w-md relative z-10">
+        {/* লোগো ও হেডার */}
+        <div className="text-center mb-8">
+          <div className="inline-flex p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-3 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
+            <Terminal className="w-8 h-8" />
           </div>
-          <h1 className="text-xl font-bold font-mono text-white tracking-tight">GATEWAY CONSOLE</h1>
-          <p className="text-xs text-slate-400">TechknowPointAI Elite Enterprise Access</p>
+          <h1 className="text-2xl font-bold font-mono tracking-tight text-white uppercase">
+            Access Terminal
+          </h1>
+          <p className="text-slate-400 text-xs mt-1 font-sans">
+            Authenticate to manage telemetry proxies and billing
+          </p>
         </div>
 
-        {/* ThemeForest Reviewer Quick Demo Bar */}
-        <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 space-y-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-mono text-cyan-300 font-bold">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            <span>THEMEFOREST REVIEWER QUICK LOGIN</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => fillDemoAccount('admin')}
-              className="px-3 py-2 rounded-xl bg-[#030e1d] hover:bg-[#08203d] border border-cyan-500/40 text-[10px] font-mono text-cyan-300 transition-colors text-center cursor-pointer"
-            >
-              Fill Enterprise Admin
-            </button>
-            <button
-              type="button"
-              onClick={() => fillDemoAccount('reviewer')}
-              className="px-3 py-2 rounded-xl bg-[#030e1d] hover:bg-[#08203d] border border-cyan-500/40 text-[10px] font-mono text-cyan-300 transition-colors text-center cursor-pointer"
-            >
-              Fill Pro Reviewer
-            </button>
-          </div>
-        </div>
-
-        <form onSubmit={handleLogin} className="space-y-4 font-mono text-xs">
-          <div>
-            <label className="block text-slate-400 uppercase text-[10px] mb-1.5">Email Address</label>
-            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] focus-within:border-cyan-500">
-              <Mail className="w-4 h-4 text-slate-500 shrink-0" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@techknowpoint.ai"
-                className="bg-transparent text-white outline-none w-full font-sans text-sm"
-              />
+        {/* লগইন কার্ড */}
+        <div className="bg-[#051527]/90 border border-[#0e3a68] backdrop-blur-xl p-6 sm:p-8 rounded-2xl shadow-2xl space-y-6">
+          {error && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
             </div>
-          </div>
+          )}
 
-          <div>
-            <label className="block text-slate-400 uppercase text-[10px] mb-1.5">Password</label>
-            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] focus-within:border-cyan-500">
-              <Lock className="w-4 h-4 text-slate-500 shrink-0" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="bg-transparent text-white outline-none w-full font-sans text-sm"
-              />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-1.5">
+                Corporate Email
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="operator@network.io"
+                  required
+                  className="w-full bg-[#030d1a] border border-[#0d3b66] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none transition-all font-mono"
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="block text-slate-400 uppercase text-[10px] mb-1.5 flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Assigned Subscription Tier</span>
-            </label>
-            <select
-              value={selectedPlan}
-              onChange={(e) => setSelectedPlan(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white text-xs font-mono focus:outline-none focus:border-cyan-500 cursor-pointer"
+            <div>
+              <label className="block text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  required
+                  className="w-full bg-[#030d1a] border border-[#0d3b66] focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-slate-600 outline-none transition-all font-mono"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold font-mono text-xs uppercase tracking-wider hover:brightness-110 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(6,182,212,0.3)] disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
             >
-              <option value="plan_developer">Developer Fleet ($19/mo - 5M Tokens)</option>
-              <option value="plan_pro">Pro Sentinel ($79/mo - 25M Tokens)</option>
-              <option value="plan_enterprise">Enterprise Matrix ($299/mo - 150M Tokens)</option>
-            </select>
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  AUTHENTICATING...
+                </>
+              ) : (
+                <>
+                  INITIALIZE SESSION
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* রেজিস্ট্রেশন লিংক */}
+          <div className="pt-4 border-t border-[#0e3a68]/60 text-center">
+            <p className="text-xs text-slate-400">
+              Need gateway credentials?{' '}
+              <Link href="/register" className="text-cyan-400 hover:text-cyan-300 font-mono underline underline-offset-4">
+                Register Platform
+              </Link>
+            </p>
           </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold tracking-wider transition-all shadow-[0_0_25px_rgba(6,182,212,0.3)] flex items-center justify-center gap-2 mt-2 font-mono cursor-pointer disabled:opacity-50"
-          >
-            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
-            <span>AUTHENTICATE & MESH SESSION</span>
-          </button>
-        </form>
-
-        <div className="text-center text-xs font-mono text-slate-400 pt-3 border-t border-[#0d3b66] flex items-center justify-between">
-          <span>New tenant?</span>
-          <Link href="/register" className="text-cyan-400 hover:underline">
-            Register Organization →
-          </Link>
         </div>
       </div>
     </div>

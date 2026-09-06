@@ -25,7 +25,7 @@ interface SidebarProps {
 }
 
 const navigationItems = [
-  { name: "Analytics Hub", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Analytics Hub", href: "/overview", icon: LayoutDashboard },
   { name: "AI Playground", href: "/playground", icon: Bot },
   { name: "Prompt Registry", href: "/prompts", icon: Terminal },
   { name: "API Key Vault", href: "/keys", icon: Key },
