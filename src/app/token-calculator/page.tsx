@@ -1,249 +1,213 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
+import { getModelPricingRates, ModelPricing } from '@/server/actions/token-calculator';
 import { 
   Calculator, 
+  Cpu, 
   Coins, 
-  Sparkles, 
   Zap, 
-  ArrowRightLeft, 
-  Info,
-  CheckCircle2
+  Sliders, 
+  Sparkles, 
+  ArrowRight, 
+  ShieldCheck, 
+  TrendingDown,
+  Info
 } from 'lucide-react';
 
-interface ModelPricing {
-  id: string;
-  name: string;
-  provider: string;
-  inputPerMillion: number;
-  outputPerMillion: number;
-  contextWindow: string;
-}
-
-const MODEL_PRICING: ModelPricing[] = [
-  {
-    id: 'qwen/qwen3.6-27b',
-    name: 'Qwen 3.6 (27B)',
-    provider: 'Groq',
-    inputPerMillion: 0.20,
-    outputPerMillion: 0.60,
-    contextWindow: '128k',
-  },
-  {
-    id: 'llama-3.3-70b-versatile',
-    name: 'Llama 3.3 (70B) Versatile',
-    provider: 'Groq',
-    inputPerMillion: 0.59,
-    outputPerMillion: 0.79,
-    contextWindow: '128k',
-  },
-  {
-    id: 'llama-3.1-8b-instant',
-    name: 'Llama 3.1 (8B) Instant',
-    provider: 'Groq',
-    inputPerMillion: 0.05,
-    outputPerMillion: 0.08,
-    contextWindow: '128k',
-  },
-  {
-    id: 'gpt-4o-mini',
-    name: 'GPT-4o Mini (Reference)',
-    provider: 'OpenAI',
-    inputPerMillion: 0.15,
-    outputPerMillion: 0.60,
-    contextWindow: '128k',
-  },
-];
-
 export default function TokenCalculatorPage() {
-  const [selectedModelId, setSelectedModelId] = useState<string>(MODEL_PRICING[0].id);
-  const [inputText, setInputText] = useState<string>('');
-  const [expectedOutputWords, setExpectedOutputWords] = useState<number>(350);
-  const [estimatedRpm, setEstimatedRpm] = useState<number>(100);
+  const [models, setModels] = useState<ModelPricing[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState<string>('qwen/qwen3.6-27b');
+  
+  // Interactive Sliders State
+  const [monthlyRequests, setMonthlyRequests] = useState<number>(100000);
+  const [inputTokens, setInputTokens] = useState<number>(500);
+  const [outputTokens, setOutputTokens] = useState<number>(250);
 
-  // সাধারণ প্রাক্কলন: ইংরেজি টেক্সটে গড়ে ১টি শব্দ ≈ ১.৩৩৩ টোকেন (বা ৪ ক্যারেক্টার ≈ ১ টোকেন)
-  const estimatedInputTokens = useMemo(() => {
-    if (!inputText.trim()) return 0;
-    const charCount = inputText.length;
-    return Math.max(1, Math.round(charCount / 4));
-  }, [inputText]);
+  useEffect(() => {
+    getModelPricingRates().then((res) => setModels(res));
+  }, []);
 
-  const estimatedOutputTokens = useMemo(() => {
-    return Math.round(expectedOutputWords * 1.333);
-  }, [expectedOutputWords]);
+  const currentModel = models.find((m) => m.id === selectedModelId) || models[0];
 
-  const selectedModel = useMemo(() => {
-    return MODEL_PRICING.find((m) => m.id === selectedModelId) || MODEL_PRICING[0];
-  }, [selectedModelId]);
+  // Cost Calculations
+  const totalInputTokensMonthly = monthlyRequests * inputTokens;
+  const totalOutputTokensMonthly = monthlyRequests * outputTokens;
+  
+  const inputCost = currentModel ? (totalInputTokensMonthly / 1000000) * currentModel.inputCostPer1M : 0;
+  const outputCost = currentModel ? (totalOutputTokensMonthly / 1000000) * currentModel.outputCostPer1M : 0;
+  const totalMonthlyCost = inputCost + outputCost;
 
-  // খরচ হিসাব (১টি কলের জন্য)
-  const singleCallCost = useMemo(() => {
-    const inputCost = (estimatedInputTokens / 1_000_000) * selectedModel.inputPerMillion;
-    const outputCost = (estimatedOutputTokens / 1_000_000) * selectedModel.outputPerMillion;
-    return inputCost + outputCost;
-  }, [estimatedInputTokens, estimatedOutputTokens, selectedModel]);
-
-  // মাসিক আনুমানিক খরচ (দৈনিক রিকোয়েস্ট ধরে)
-  const monthlyProjectedCost = useMemo(() => {
-    const dailyCost = singleCallCost * estimatedRpm;
-    return dailyCost * 30;
-  }, [singleCallCost, estimatedRpm]);
+  // Comparison baseline (e.g. legacy GPT-4 pricing baseline approx $10 / 1M)
+  const legacyBaselineCost = ((totalInputTokensMonthly + totalOutputTokensMonthly) / 1000000) * 8.50;
+  const estimatedSavings = Math.max(0, legacyBaselineCost - totalMonthlyCost);
 
   return (
-    <div className="space-y-6">
-      {/* হেডার */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-          <Calculator className="w-6 h-6 text-indigo-400" />
-          টোকেন ও খরচ ক্যালকুলেটর
-        </h1>
-        <p className="text-zinc-400 text-sm mt-1">
-          প্রম্পট টেক্সট এবং আউটপুট দৈর্ঘ্যের ভিত্তিতে টোকেন সংখ্যা ও মোট খরচের সঠিক প্রাক্কলন।
-        </p>
+    <div className="space-y-8 pb-10">
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#0e2a47] pb-6">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-white font-mono flex items-center gap-2.5">
+              <Calculator className="w-6 h-6 text-cyan-400" />
+              TOKEN COMPUTE CALCULATOR
+            </h1>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+              DYNAMIC PROJECTIONS
+            </span>
+          </div>
+          <p className="text-slate-400 text-sm mt-1 font-sans">
+            Simulate monthly inference expenditures, token velocity, and architecture cost savings across Groq LPU fleets.
+          </p>
+        </div>
       </div>
 
+      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* ইনপুট কনফিগারেশন সেকশন */}
+        {/* Left 2 Cols: Interactive Parameters */}
         <div className="lg:col-span-2 space-y-6">
-          {/* মডেল নির্বাচন */}
-          <div className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-4">
-            <label className="text-sm font-medium text-zinc-300 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-indigo-400" />
-              টার্গেট মডেল নির্বাচন করুন
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {MODEL_PRICING.map((m) => (
-                <div
-                  key={m.id}
-                  onClick={() => setSelectedModelId(m.id)}
-                  className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
-                    selectedModelId === m.id
-                      ? 'bg-indigo-950/40 border-indigo-500/80 ring-1 ring-indigo-500/50'
-                      : 'bg-zinc-950/60 border-zinc-800 hover:border-zinc-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-white">{m.name}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 border border-zinc-700 font-mono">
-                      {m.provider}
-                    </span>
-                  </div>
-                  <div className="mt-2 text-[11px] text-zinc-400 flex justify-between font-mono">
-                    <span>ইনপুট: ${m.inputPerMillion}/M</span>
-                    <span>আউটপুট: ${m.outputPerMillion}/M</span>
-                  </div>
-                </div>
-              ))}
+          <div className="rounded-3xl bg-[#06182e]/80 border border-[#0d3b66] p-6 shadow-2xl backdrop-blur-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-[#0d3b66] pb-4">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-cyan-400" />
+                <h2 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                  WORKLOAD PARAMETERS
+                </h2>
+              </div>
+              <span className="text-xs font-mono text-cyan-400">Real-Time Simulation</span>
             </div>
-          </div>
 
-          {/* প্রম্পট টেক্সট বক্স */}
-          <div className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-zinc-300">ইনপুট প্রম্পট লিখুন বা পেস্ট করুন</label>
-              <span className="text-xs text-zinc-500 font-mono">
-                {inputText.length} অক্ষর • ≈ {estimatedInputTokens} টোকেন
-              </span>
+            {/* Model Selector */}
+            <div className="space-y-2">
+              <label className="block text-xs font-mono uppercase text-slate-400">Target Model Engine</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {models.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setSelectedModelId(m.id)}
+                    className={`p-3.5 rounded-2xl border text-left transition-all ${
+                      selectedModelId === m.id
+                        ? 'bg-cyan-500/15 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
+                        : 'bg-[#030e1d] border-[#0e355c] hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="font-mono text-xs font-bold text-white truncate">{m.name}</div>
+                    <div className="text-[10px] font-mono text-cyan-400 mt-1">{m.speed}</div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <textarea
-              rows={6}
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="এখানে আপনার সিস্টেম প্রম্পট বা ব্যবহারকারীর মেসেজ পেস্ট করুন..."
-              className="w-full p-3.5 rounded-xl bg-zinc-950 border border-zinc-800 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-indigo-500 transition-colors resize-none"
-            />
-          </div>
 
-          {/* আউটপুট ও ভলিউম স্লাইডার */}
-          <div className="p-5 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-6">
-            <div>
-              <div className="flex justify-between text-xs font-medium text-zinc-300 mb-2">
-                <span>প্রত্যাশিত অ্যাসিস্ট্যান্ট রেসপন্স (শব্দ সংখ্যা)</span>
-                <span className="font-mono text-indigo-400">{expectedOutputWords} শব্দ (≈ {estimatedOutputTokens} টোকেন)</span>
+            {/* Slider 1: Monthly Requests */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs font-mono">
+                <span className="text-slate-400">Monthly Inferences (Requests)</span>
+                <span className="text-cyan-400 font-bold">{monthlyRequests.toLocaleString()} Calls</span>
+              </div>
+              <input
+                type="range"
+                min={10000}
+                max={2000000}
+                step={10000}
+                value={monthlyRequests}
+                onChange={(e) => setMonthlyRequests(Number(e.target.value))}
+                className="w-full accent-cyan-400 h-1.5 bg-[#030e1d] rounded-lg cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] font-mono text-slate-500">
+                <span>10k Requests</span>
+                <span>2M Requests</span>
+              </div>
+            </div>
+
+            {/* Slider 2: Input Tokens per Request */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs font-mono">
+                <span className="text-slate-400">Average Prompt Tokens / Request</span>
+                <span className="text-cyan-400 font-bold">{inputTokens} Tokens</span>
+              </div>
+              <input
+                type="range"
+                min={50}
+                max={4000}
+                step={50}
+                value={inputTokens}
+                onChange={(e) => setInputTokens(Number(e.target.value))}
+                className="w-full accent-cyan-400 h-1.5 bg-[#030e1d] rounded-lg cursor-pointer"
+              />
+            </div>
+
+            {/* Slider 3: Output Tokens per Request */}
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs font-mono">
+                <span className="text-slate-400">Average Completion Tokens / Request</span>
+                <span className="text-cyan-400 font-bold">{outputTokens} Tokens</span>
               </div>
               <input
                 type="range"
                 min={50}
                 max={2000}
-                step={50}
-                value={expectedOutputWords}
-                onChange={(e) => setExpectedOutputWords(Number(e.target.value))}
-                className="w-full accent-indigo-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-medium text-zinc-300 mb-2">
-                <span>দৈনিক রিকোয়েস্ট ভলিউম প্রাক্কলন</span>
-                <span className="font-mono text-emerald-400">{estimatedRpm.toLocaleString()} কল / দিন</span>
-              </div>
-              <input
-                type="range"
-                min={10}
-                max={10000}
-                step={50}
-                value={estimatedRpm}
-                onChange={(e) => setEstimatedRpm(Number(e.target.value))}
-                className="w-full accent-emerald-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+                step={25}
+                value={outputTokens}
+                onChange={(e) => setOutputTokens(Number(e.target.value))}
+                className="w-full accent-cyan-400 h-1.5 bg-[#030e1d] rounded-lg cursor-pointer"
               />
             </div>
           </div>
         </div>
 
-        {/* এস্টিমেশন রেজাল্ট ও সামারি কার্ড */}
-        <div className="space-y-4">
-          <div className="p-5 rounded-xl bg-gradient-to-br from-zinc-900 to-indigo-950/40 border border-indigo-900/50 space-y-5">
-            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-              <Coins className="w-4 h-4 text-amber-400" />
-              খরচের প্রাক্কলন সারসংক্ষেপ
-            </h3>
+        {/* Right 1 Col: Cost Projection Breakdown */}
+        <div className="space-y-6">
+          <div className="rounded-3xl bg-gradient-to-b from-[#081e3a] to-[#041022] border border-[#103a68] p-6 shadow-2xl space-y-6 sticky top-28">
+            <div className="flex items-center gap-2 border-b border-[#0d3b66] pb-4">
+              <Coins className="w-5 h-5 text-emerald-400" />
+              <div>
+                <h3 className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+                  PROJECTED EXPENDITURE
+                </h3>
+                <p className="text-[11px] text-slate-400 font-sans">Monthly micro-settlement forecast</p>
+              </div>
+            </div>
 
-            <div className="space-y-3">
-              <div className="flex justify-between items-center text-xs pb-2 border-b border-zinc-800">
-                <span className="text-zinc-400">প্রতি কলে ইনপুট টোকেন:</span>
-                <span className="font-mono text-zinc-200">{estimatedInputTokens.toLocaleString()}</span>
+            {/* Total Cost Display */}
+            <div className="p-5 rounded-2xl bg-[#030e1d] border border-[#0e355c] space-y-1 text-center">
+              <span className="text-[10px] font-mono text-slate-400 uppercase tracking-widest block">Estimated Monthly Total</span>
+              <div className="text-4xl font-black font-mono text-cyan-400 tracking-tight">
+                ${totalMonthlyCost.toFixed(2)} <span className="text-xs text-slate-500 font-sans">USD</span>
               </div>
-              <div className="flex justify-between items-center text-xs pb-2 border-b border-zinc-800">
-                <span className="text-zinc-400">প্রতি কলে আউটপুট টোকেন:</span>
-                <span className="font-mono text-zinc-200">{estimatedOutputTokens.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-center text-xs pb-2 border-b border-zinc-800">
-                <span className="text-zinc-400">মোট টোকেন (প্রতি কল):</span>
-                <span className="font-mono text-indigo-300 font-semibold">
-                  {(estimatedInputTokens + estimatedOutputTokens).toLocaleString()}
+              <span className="text-[11px] font-mono text-emerald-400 block pt-1">
+                ● Sub-cent micro-settled
+              </span>
+            </div>
+
+            {/* Metrics Breakdown */}
+            <div className="space-y-3 font-mono text-xs">
+              <div className="flex justify-between pb-2 border-b border-[#0e355c]/60">
+                <span className="text-slate-400">Total Tokens / mo:</span>
+                <span className="text-white font-bold">
+                  {((totalInputTokensMonthly + totalOutputTokensMonthly) / 1000000).toFixed(2)}M Tokens
                 </span>
               </div>
+              <div className="flex justify-between pb-2 border-b border-[#0e355c]/60">
+                <span className="text-slate-400">Input Token Cost:</span>
+                <span className="text-slate-200">${inputCost.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between pb-2 border-b border-[#0e355c]/60">
+                <span className="text-slate-400">Output Token Cost:</span>
+                <span className="text-slate-200">${outputCost.toFixed(2)}</span>
+              </div>
             </div>
 
-            {/* একক কল খরচ */}
-            <div className="p-3.5 rounded-lg bg-zinc-950/80 border border-zinc-800/80">
-              <span className="text-[11px] text-zinc-400 block">প্রতি একক কলের খরচ (USD)</span>
-              <span className="text-xl font-bold font-mono text-emerald-400 mt-0.5 block">
-                ${singleCallCost.toFixed(6)}
-              </span>
+            {/* Savings Box */}
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-1.5">
+              <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs font-bold">
+                <TrendingDown className="w-4 h-4" />
+                <span>Estimated Legacy Savings</span>
+              </div>
+              <p className="text-xs text-slate-300 font-sans leading-relaxed">
+                By routing through TechknowPointAI Groq LPU mesh, you save approximately <strong className="text-emerald-400 font-mono">${estimatedSavings.toFixed(2)}/mo</strong> compared to standard cloud baseline providers.
+              </p>
             </div>
-
-            {/* মাসিক প্রজেকশন */}
-            <div className="p-3.5 rounded-lg bg-indigo-950/60 border border-indigo-800/60">
-              <span className="text-[11px] text-indigo-300 block">মাসিক আনুমানিক বিল (৩০ দিন)</span>
-              <span className="text-2xl font-bold font-mono text-white mt-0.5 block">
-                ${monthlyProjectedCost.toFixed(2)}
-              </span>
-              <span className="text-[10px] text-indigo-400 mt-1 block">
-                ভিত্তি: দৈনিক {estimatedRpm.toLocaleString()} কল
-              </span>
-            </div>
-          </div>
-
-          {/* দ্রুত তথ্য নোট */}
-          <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800 text-xs text-zinc-400 space-y-2">
-            <div className="flex items-center gap-1.5 text-zinc-300 font-medium">
-              <Info className="w-4 h-4 text-blue-400 shrink-0" />
-              <span>টোকেন প্রাক্কলন পদ্ধতি</span>
-            </div>
-            <p className="leading-relaxed">
-              ইংরেজি ভাষার জন্য গড় ১টি শব্দ ≈ ১.৩৩৩ টোকেন ধরা হয়েছে। বাংলা ও বিশেষ ক্যারেক্টারের ক্ষেত্রে টোকেন সংখ্যা কিছুটা বেশি হতে পারে।
-            </p>
           </div>
         </div>
       </div>
