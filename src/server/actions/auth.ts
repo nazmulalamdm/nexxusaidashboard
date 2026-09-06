@@ -1,6 +1,7 @@
+// src/server/actions/auth.ts
 'use server';
 
-import { createClient } from '@/utils/supabase/server';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 export async function registerAction(formData: FormData) {
@@ -9,53 +10,54 @@ export async function registerAction(formData: FormData) {
   const password = (formData.get('password') as string)?.trim();
 
   if (!email || !password) {
-    return { error: 'All credentials are required.' };
+    return { error: 'Please fill in all required credentials.' };
   }
 
-  const supabase = await createClient();
-
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: name,
-      },
-    },
-  });
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  // যদি Supabase-এ Email Confirm অন থাকে, তাহলে সেশন তৈরি হবে না
+  // সফল রেজিস্ট্রেশন রেসপন্স
   return { success: true };
 }
 
 export async function loginAction(formData: FormData) {
   const email = (formData.get('email') as string)?.trim();
   const password = (formData.get('password') as string)?.trim();
+  const callbackUrl = (formData.get('callbackUrl') as string)?.trim() || '/overview';
 
   if (!email || !password) {
     return { error: 'Please enter both email and password.' };
   }
 
-  const supabase = await createClient();
+  const cookieStore = await cookies();
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+  // ১. সেশন টোকেন সেট
+  cookieStore.set('tp_auth_token', 'mock_secure_token_abc123', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7, // ৭ দিন
   });
 
-  if (error) {
-    return { error: error.message };
-  }
+  // ২. ইউজার প্রোফাইল ডাটা সেট
+  cookieStore.set(
+    'tp_user_profile',
+    encodeURIComponent(
+      JSON.stringify({
+        name: email.split('@')[0],
+        email: email,
+      })
+    ),
+    {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    }
+  );
 
-  return { success: true };
+  // ৩. সরাসরি কাঙ্ক্ষিত পেজে রিডাইরেক্ট
+  redirect(callbackUrl);
 }
 
 export async function logoutAction() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect('/');
+  const cookieStore = await cookies();
+  cookieStore.delete('tp_auth_token');
+  cookieStore.delete('tp_user_profile');
+  redirect('/login');
 }
