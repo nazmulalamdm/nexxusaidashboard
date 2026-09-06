@@ -1,10 +1,10 @@
-import "./globals.css";
-import { ThemeProvider } from "next-themes";
-import DashboardLayout from "@/components/DashboardLayout";
+import type { Metadata } from 'next';
+import './globals.css';
+import { ThemeProvider } from '@/components/ThemeProvider';
 
-export const metadata = {
-title: 'TechknowPointAI - AI Infrastructure & Gateway Telemetry Dashboard',
-description: 'Next.js AI Gateway and Token Telemetry Dashboard Template',
+export const metadata: Metadata = {
+  title: 'TechknowPointAI | Telemetry & Inference Gateway',
+  description: 'Enterprise AI Telemetry, Token Accounting and Edge Gateway',
 };
 
 export default function RootLayout({
@@ -13,11 +13,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className="antialiased font-sans">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <DashboardLayout>{children}</DashboardLayout>
-        </ThemeProvider>
+    <html
+      lang="en"
+      className="dark"
+      data-theme="dark"
+      style={{ colorScheme: 'dark' }}
+      suppressHydrationWarning
+    >
+      <body
+        className="bg-[#020b14] text-white antialiased min-h-screen selection:bg-cyan-500 selection:text-black"
+        suppressHydrationWarning
+      >
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

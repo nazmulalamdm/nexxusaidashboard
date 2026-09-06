@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Terminal, Lock, Mail, User, ArrowRight, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { registerAction } from '@/server/actions/auth';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -32,15 +33,19 @@ export default function RegisterPage() {
         throw new Error('Security policy requires at least 6 characters.');
       }
 
-      // TODO: এখানে আপনার রিয়েল ব্যাকএন্ড একাউন্ট ক্রিয়েশন API কল করবেন
-      await new Promise((resolve) => setTimeout(resolve, 900)); // সিমুলেশন ডিলে
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('email', email);
+      formData.append('password', password);
 
-      // রেজিস্ট্রেশন সফল হলে সেশন কুকি অটো-সেট করে ডিরেক্ট লগইন করে নেওয়া
-      document.cookie = 'tp_auth_token=tp_valid_session_key; path=/; max-age=86400; SameSite=Lax';
+      const res = await registerAction(formData);
 
-      // সরাসরি /overview পেজে নিয়ে যাওয়া
-      router.push('/overview');
-      router.refresh();
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+
+      // রেজিস্ট্রেশন শেষে লগইন পেজে রিডাইরেক্ট (ড্যাশবোর্ডে নয়)
+      router.push('/login?registered=true');
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -54,11 +59,9 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-[#020b14] flex items-center justify-center p-4 selection:bg-cyan-500 selection:text-black">
-      {/* ব্যাকগ্রাউন্ড গ্লো ইফেক্ট */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500/10 blur-[140px] rounded-full pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
-        {/* হেডার */}
         <div className="text-center mb-8">
           <div className="inline-flex p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-3 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
             <ShieldCheck className="w-8 h-8" />
@@ -71,7 +74,6 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        {/* রেজিস্ট্রেশন ফর্ম কার্ড */}
         <div className="bg-[#051527]/90 border border-[#0e3a68] backdrop-blur-xl p-6 sm:p-8 rounded-2xl shadow-2xl space-y-6">
           {error && (
             <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono flex items-center gap-2">
@@ -157,18 +159,17 @@ export default function RegisterPage() {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  DEPLOYING NAMESPACE...
+                  PROVISIONING ACCOUNT...
                 </>
               ) : (
                 <>
-                  PROVISION & LAUNCH
+                  PROVISION &amp; LAUNCH
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          {/* সাইন ইন লিংক */}
           <div className="pt-4 border-t border-[#0e3a68]/60 text-center">
             <p className="text-xs text-slate-400">
               Already have an active key?{' '}

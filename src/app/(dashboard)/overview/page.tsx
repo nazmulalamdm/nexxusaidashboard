@@ -1,3 +1,5 @@
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { getDashboardMetrics } from '@/server/actions/analytics';
 import { AnalyticsCharts } from '@/components/dashboard/AnalyticsCharts';
 import { 
@@ -15,17 +17,37 @@ import {
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
+  // ১. ড্যাশবোর্ড সার্ভার-সাইড প্রোটেকশন চেক
+  const cookieStore = await cookies();
+  const token = cookieStore.get('tp_auth_token')?.value;
+
+  if (!token) {
+    redirect('/login?callbackUrl=/overview');
+  }
+
+  // ২. লগইন করা ইউজারের প্রোফাইল সেফ পার্সিং (ক্র্যাশ-প্রুফ)
+  const profileRaw = cookieStore.get('tp_user_profile')?.value;
+  let user = { name: 'Operator', email: '' };
+
+  if (profileRaw) {
+    try {
+      user = JSON.parse(decodeURIComponent(profileRaw));
+    } catch {
+      user = { name: 'Operator', email: '' };
+    }
+  }
+
   const metrics = await getDashboardMetrics();
 
   return (
     <div className="space-y-8 pb-10">
-      {/* Top Banner & Mesh Status */}
+      {/* Top Banner & Mesh Status with Dynamic User Name */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#0e2a47] pb-6">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight text-white font-mono flex items-center gap-2.5">
               <Terminal className="w-6 h-6 text-cyan-400" />
-              TELEMETRY & INFERENCE HUB
+              OPERATOR: <span className="text-cyan-400 uppercase">{user.name}</span>
             </h1>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
@@ -134,7 +156,7 @@ export default async function DashboardPage() {
           <div>
             <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider flex items-center gap-2">
               <Layers className="w-4 h-4 text-cyan-400" />
-              Traffic & Cost Volumetrics
+              Traffic &amp; Cost Volumetrics
             </h2>
             <p className="text-xs text-slate-400 font-sans">
               Dynamic aggregate inference trendline across active client keys

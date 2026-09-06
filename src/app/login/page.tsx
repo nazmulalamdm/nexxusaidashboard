@@ -1,12 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Terminal, Lock, Mail, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { Terminal, Lock, Mail, ArrowRight, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { loginAction } from '@/server/actions/auth';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isRegistered = searchParams.get('registered') === 'true';
+  const callbackUrl = searchParams.get('callbackUrl') || '/overview';
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,19 +23,22 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // সাধারণ ভ্যালিডেশন
       if (!email || !password) {
         throw new Error('Please fill in all fields');
       }
 
-      // TODO: এখানে আপনার রিয়েল ব্যাকএন্ড API কল করতে পারেন (যেমন: await fetch('/api/auth/login'))
-      await new Promise((resolve) => setTimeout(resolve, 800)); // সিমুলেশন ডিলে
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('password', password);
 
-      // সেশন কুকি সেট করা (১ দিনের মেয়াদ)
-      document.cookie = 'tp_auth_token=tp_valid_session_key; path=/; max-age=86400; SameSite=Lax';
+      const res = await loginAction(formData);
 
-      // সফল লগইনের পর /overview-এ রিডাইরেক্ট
-      router.push('/overview');
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+
+      // সফল লগইনের পর ড্যাশবোর্ডে যাবে
+      router.push(callbackUrl);
       router.refresh();
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -45,11 +53,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#020b14] flex items-center justify-center p-4 selection:bg-cyan-500 selection:text-black">
-      {/* ব্যাকগ্রাউন্ড গ্লো ইফেক্ট */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/10 blur-[130px] rounded-full pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
-        {/* লোগো ও হেডার */}
         <div className="text-center mb-8">
           <div className="inline-flex p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-3 shadow-[0_0_20px_rgba(6,182,212,0.2)]">
             <Terminal className="w-8 h-8" />
@@ -62,8 +68,14 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* লগইন কার্ড */}
         <div className="bg-[#051527]/90 border border-[#0e3a68] backdrop-blur-xl p-6 sm:p-8 rounded-2xl shadow-2xl space-y-6">
+          {isRegistered && !error && (
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>Account provisioned! Please authenticate below.</span>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -125,7 +137,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* রেজিস্ট্রেশন লিংক */}
           <div className="pt-4 border-t border-[#0e3a68]/60 text-center">
             <p className="text-xs text-slate-400">
               Need gateway credentials?{' '}
