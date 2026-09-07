@@ -34,7 +34,7 @@ const navigationItems = [
   { name: "Token Telemetry", href: "/transactions", icon: Activity },
   { name: "Token Calculator", href: "/token-calculator", icon: Calculator }, 
   { name: "Settlements & Quotas", href: "/payments", icon: CreditCard },
-  { name: "Security & API Keys", href: "/Security", icon: Settings },
+  { name: "Security & API Keys", href: "/security", icon: Settings },
 ];
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {

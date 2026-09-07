@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   output: "standalone",
   devIndicators: false,
+  serverExternalPackages: ["pdfkit"],
 };
 
 export default nextConfig;

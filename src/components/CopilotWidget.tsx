@@ -14,6 +14,9 @@ import {
   Activity,
   Calculator,
   Sparkles,
+  FileDown,
+  ShieldAlert,
+  CreditCard,
 } from "lucide-react";
 
 interface ActionData {
@@ -26,6 +29,12 @@ interface ActionData {
   throughput?: string;
   estimatedCostUSD?: string;
   totalTokens?: number;
+  downloadUrl?: string;
+  invoiceId?: string;
+  companyName?: string;
+  upgradeUrl?: string;
+  checkoutUrl?: string;
+  tierName?: string;
 }
 
 interface Message {
@@ -41,7 +50,7 @@ export default function CopilotWidget() {
     {
       role: "assistant",
       content:
-        "TechknowpointAI Online. Ready to navigate the gateway mesh, test prompts, manage keys, or read node telemetry.",
+        "TechknowpointAI Nexus-7 v4 Autopilot Online. Ready to orchestrate mesh telemetry, generate invoices, rotate keys, or execute autonomous subscription upgrades.",
     },
   ]);
   const [loading, setLoading] = useState(false);
@@ -73,14 +82,23 @@ export default function CopilotWidget() {
         }),
       });
 
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      const rawText = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(`Server returned non-JSON response (${res.status}). Check server logs.`);
+      }
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || `Gateway error (${res.status})`);
+      }
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: data.reply,
+          content: data.reply || "Operation acknowledged.",
           actions: data.actions || [],
         },
       ]);
@@ -99,7 +117,6 @@ export default function CopilotWidget() {
 
   return (
     <div className="fixed bottom-5 right-5 z-50 font-mono select-none">
-      {/* Trigger Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -110,15 +127,13 @@ export default function CopilotWidget() {
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
           </div>
           <span className="text-xs font-bold tracking-wider text-slate-200 uppercase">
-            AI Agent // TechknowpointAI
+            AI Agent // TechknowpointAI v4
           </span>
         </button>
       )}
 
-      {/* Floating Chat Modal */}
       {isOpen && (
         <div className="w-[360px] sm:w-[430px] h-[550px] rounded-2xl bg-[#030d1b]/95 border border-[#0d3b66] shadow-[0_0_40px_rgba(2,12,27,0.9)] backdrop-blur-xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-200">
-          {/* Header */}
           <div className="h-14 px-4 bg-[#06182e] border-b border-[#0e355c] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
@@ -127,9 +142,11 @@ export default function CopilotWidget() {
               <div>
                 <h3 className="text-xs font-bold text-white tracking-wider uppercase flex items-center gap-1.5">
                   TechknowpointAI
-                  <span className="px-1.5 py-0.2 rounded bg-cyan-500/20 text-cyan-300 text-[9px]">v2.0</span>
+                  <span className="px-1.5 py-0.2 rounded bg-indigo-500/30 text-indigo-300 border border-indigo-500/40 text-[9px]">
+                    v4.0 Autopilot
+                  </span>
                 </h3>
-                <p className="text-[10px] text-emerald-400 font-mono">ALL 10 MESH NODES ACTIVE</p>
+                <p className="text-[10px] text-emerald-400 font-mono">AUTONOMOUS SETTLEMENT NODE ONLINE</p>
               </div>
             </div>
             <button
@@ -140,13 +157,26 @@ export default function CopilotWidget() {
             </button>
           </div>
 
-          {/* Quick Shortcuts */}
           <div className="px-3 py-2 bg-[#041224] border-b border-[#0e355c]/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[10px]">
+            <button
+              onClick={() => handleSend("Upgrade me to v4 Autopilot Tier")}
+              className="px-2 py-1 rounded bg-indigo-950/60 border border-indigo-500/40 text-indigo-300 hover:bg-indigo-900/40 shrink-0 transition-colors flex items-center gap-1 font-bold"
+            >
+              <Sparkles className="w-3 h-3 text-indigo-400" />
+              Upgrade v4 ($49)
+            </button>
+            <button
+              onClick={() => handleSend("Upgrade to Pro Developer Fleet")}
+              className="px-2 py-1 rounded bg-[#081e3a] border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 shrink-0 transition-colors flex items-center gap-1"
+            >
+              <CreditCard className="w-3 h-3 text-cyan-400" />
+              Pro Plan ($19)
+            </button>
             <button
               onClick={() => handleSend("Change my password")}
               className="px-2 py-1 rounded bg-[#081e3a] border border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 shrink-0 transition-colors"
             >
-              🔑 Security & Password
+              🔑 Security
             </button>
             <button
               onClick={() => handleSend("Show system telemetry")}
@@ -168,7 +198,6 @@ export default function CopilotWidget() {
             </button>
           </div>
 
-          {/* Messages Stream */}
           <div className="flex-1 p-4 overflow-y-auto space-y-3.5 text-xs">
             {messages.map((m, idx) => (
               <div
@@ -176,7 +205,7 @@ export default function CopilotWidget() {
                 className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-xl p-3 leading-relaxed ${
+                  className={`max-w-[88%] rounded-xl p-3 leading-relaxed ${
                     m.role === "user"
                       ? "bg-cyan-500 text-slate-950 font-sans font-medium rounded-tr-none"
                       : "bg-[#06182e] border border-[#0e355c] text-slate-200 rounded-tl-none font-mono"
@@ -184,12 +213,26 @@ export default function CopilotWidget() {
                 >
                   <p className="whitespace-pre-wrap">{m.content}</p>
 
-                  {/* Actions Display */}
                   {m.actions && m.actions.length > 0 && (
                     <div className="mt-2.5 pt-2.5 border-t border-[#0e355c]/60 space-y-2">
                       {m.actions.map((act, aIdx) => (
-                        <div key={aIdx}>
-                          {/* Navigation Route Link Button */}
+                        <div key={aIdx} className="space-y-1.5">
+                          {/* Stripe Checkout Action Link */}
+                          {act.checkoutUrl && (
+                            <a
+                              href={act.checkoutUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-between p-2.5 rounded-lg bg-indigo-950/60 border border-indigo-500/50 text-indigo-300 hover:bg-indigo-900/50 transition-all font-bold text-[11px] shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+                            >
+                              <div className="flex items-center gap-2">
+                                <CreditCard className="w-4 h-4 text-indigo-400" />
+                                <span>CHECKOUT: {act.tierName?.toUpperCase() || "PROCEED TO PAYMENT"}</span>
+                              </div>
+                              <ExternalLink className="w-3.5 h-3.5 text-indigo-400" />
+                            </a>
+                          )}
+
                           {act.action === "NAVIGATE" && act.path && (
                             <Link
                               href={act.path}
@@ -204,7 +247,34 @@ export default function CopilotWidget() {
                             </Link>
                           )}
 
-                          {/* New API Key Emitted */}
+                          {act.downloadUrl && (
+                            <a
+                              href={act.downloadUrl}
+                              download={`${act.companyName ? act.companyName.replace(/\s+/g, '_') : 'Client'}_Invoice.pdf`}
+                              className="flex items-center justify-between p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-400/40 text-cyan-300 hover:bg-cyan-900/40 transition-all font-bold text-[11px]"
+                            >
+                              <div className="flex items-center gap-2">
+                                <FileDown className="w-4 h-4 text-cyan-400" />
+                                <span>DOWNLOAD {act.companyName ? `${act.companyName.toUpperCase()} INVOICE` : "INVOICE PDF"}</span>
+                              </div>
+                              <span className="text-[10px] text-cyan-400/70">{act.invoiceId || "PDF"}</span>
+                            </a>
+                          )}
+
+                          {act.upgradeUrl && (
+                            <Link
+                              href={act.upgradeUrl}
+                              onClick={() => setIsOpen(false)}
+                              className="flex items-center justify-between p-2.5 rounded-lg bg-amber-950/40 border border-amber-500/40 text-amber-300 hover:bg-amber-900/40 transition-all text-[11px]"
+                            >
+                              <div className="flex items-center gap-1.5 font-bold">
+                                <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                                <span>RENEW / UPGRADE SUBSCRIPTION</span>
+                              </div>
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </Link>
+                          )}
+
                           {act.apiKey && (
                             <div className="p-2.5 rounded bg-black/40 border border-amber-500/30 text-[11px] text-amber-300 space-y-1">
                               <div className="flex items-center gap-1 font-bold">
@@ -217,7 +287,6 @@ export default function CopilotWidget() {
                             </div>
                           )}
 
-                          {/* Telemetry Metrics */}
                           {act.systemStatus && (
                             <div className="p-2.5 rounded bg-[#030d1b] border border-cyan-500/20 text-[11px] text-cyan-300 flex items-center justify-between">
                               <div className="flex items-center gap-1.5">
@@ -228,7 +297,6 @@ export default function CopilotWidget() {
                             </div>
                           )}
 
-                          {/* Token Calculator Estimation */}
                           {act.estimatedCostUSD && (
                             <div className="p-2.5 rounded bg-[#030d1b] border border-emerald-500/30 text-[11px] text-emerald-300 flex items-center justify-between">
                               <div className="flex items-center gap-1.5">
@@ -255,7 +323,6 @@ export default function CopilotWidget() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat Input */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -267,7 +334,7 @@ export default function CopilotWidget() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Type command e.g. Open prompt registry..."
+              placeholder="Type command e.g. Upgrade to v4 Autopilot..."
               className="flex-1 bg-[#020b17] border border-[#0d3b66] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-colors font-sans"
             />
             <button
