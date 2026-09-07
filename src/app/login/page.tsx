@@ -144,6 +144,14 @@ export default function LoginPage() {
                 Register Platform
               </Link>
             </p>
+           <div className="flex items-center justify-center mb-1 mt-3">
+  <Link
+    href="/forgot-password"
+    className="text-[11px] text-cyan-400 hover:text-cyan-300 transition-colors"
+  >
+    Forgot password?
+  </Link>
+</div>
           </div>
         </div>
       </div>

@@ -45,7 +45,7 @@ const INITIAL_PROMPTS: PromptTemplate[] = [
     title: 'Customer Ticket Intent & Priority Triage',
     description: 'Zero-shot classification categorizing inbound issues into urgent, billing, or tech.',
     category: 'Operations',
-    model: 'llama-3.1-8b-instant',
+    model: 'openai/gpt-oss-20b',
     systemPrompt: 'You are an automated support triage parser. Output strict JSON with keys: "priority" (P1-P4), "department", and "resolution_hint". Do not output conversational preamble.',
     userPromptTemplate: 'Analyze customer message:\n"{{customer_message}}"',
     variables: ['customer_message'],
@@ -55,7 +55,7 @@ const INITIAL_PROMPTS: PromptTemplate[] = [
     title: 'PostgreSQL Query Planner & Schema Architect',
     description: 'Translates natural language specifications into indexed relational schema & SQL.',
     category: 'Data Architecture',
-    model: 'llama-3.3-70b-versatile',
+    model: 'openai/gpt-oss-120b',
     systemPrompt: 'You are an ultra-fast PostgreSQL optimizer. Write ANSI SQL with appropriate index hints, execution plan cost estimation, and transaction boundaries.',
     userPromptTemplate: 'Database Schema:\n{{schema}}\n\nObjective: {{query_goal}}',
     variables: ['schema', 'query_goal'],
@@ -342,9 +342,9 @@ export default function PromptsPage() {
                     onChange={(e) => setModel(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-[#030e1d] border border-[#0e355c] text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
                   >
+                    <option value="openai/gpt-oss-20b">GPT-OSS (20B)</option>
                     <option value="qwen/qwen3.6-27b">Qwen 3.6 (27B)</option>
-                    <option value="llama-3.3-70b-versatile">Llama 3.3 (70B)</option>
-                    <option value="llama-3.1-8b-instant">Llama 3.1 (8B)</option>
+                    <option value="openai/gpt-oss-120b">GPT-OSS (120B)</option>
                   </select>
                 </div>
               </div>

@@ -14,9 +14,10 @@ import {
   ChevronDown,
   Command,
   User,
-  Settings,
+  Shield,
   LogOut,
 } from "lucide-react";
+import { logoutAction } from "@/server/actions/auth";
 
 interface TopbarProps {
   onToggleSidebar: () => void;
@@ -30,7 +31,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // ক্লায়েন্ট-সাইডে ডাইনামিক ইউজার স্টেট
-  const [user, setUser] = useState({ name: "Operator", email: "" });
+  const [user, setUser] = useState({ name: "", email: "" });
 
   useEffect(() => {
     setMounted(true);
@@ -40,20 +41,21 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
       const value = `; ${document.cookie}`;
       const parts = value.split(`; ${name}=`);
       if (parts.length === 2) return parts.pop()?.split(";").shift();
+      return null;
     };
 
     const profileRaw = getCookie("tp_user_profile");
     if (profileRaw) {
       try {
         const parsed = JSON.parse(decodeURIComponent(profileRaw));
-        if (parsed.name) {
+        if (parsed && parsed.name) {
           setUser({
             name: parsed.name,
             email: parsed.email || "",
           });
         }
       } catch {
-        setUser({ name: "Operator", email: "" });
+        setUser({ name: "", email: "" });
       }
     }
   }, []);
@@ -75,18 +77,17 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
 
   const isDark = mounted ? theme === "dark" || resolvedTheme === "dark" : true;
 
-  const handleSignOut = () => {
+  // সার্ভার অ্যাকশনের মাধ্যমে সম্পূর্ণ কুকি ক্লিয়ার এবং লগইন পেজে রিডাইরেক্ট
+  const handleSignOut = async () => {
     setDropdownOpen(false);
-    // সাইন আউটের সময় কুকি ক্লিয়ার করে রিডাইরেক্ট
     document.cookie = "tp_auth_token=; path=/; max-age=0";
     document.cookie = "tp_user_profile=; path=/; max-age=0";
-    router.push("/login");
+    await logoutAction();
   };
 
-  // নামের প্রথম ২টি অক্ষর দিয়ে অ্যাভাটার তৈরি
-  const avatarInitials = user.name
-    ? user.name.slice(0, 2).toUpperCase()
-    : "OP";
+  // নাম প্রদর্শন লজিক
+  const displayName = user.name ? user.name : "Operator";
+  const avatarInitials = displayName.slice(0, 2).toUpperCase();
 
   return (
     <header className="h-16 border-b border-slate-200 dark:border-slate-800/80 bg-white dark:bg-[#1f2233] px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 select-none transition-colors">
@@ -165,17 +166,18 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
             className="flex items-center gap-2 pl-1 pr-1.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors"
           >
             <div className="relative">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#7367f0]/20 border border-[#7367f0]/30 text-[#7367f0] flex items-center justify-center font-bold text-xs uppercase">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#7367f0]/20 border border-[#7367f0]/30 text-[#7367f0] flex items-center justify-center font-bold text-xs uppercase font-mono">
                 {avatarInitials}
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#1f2233]" />
             </div>
 
             <div className="hidden sm:flex flex-col text-left">
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-tight uppercase">
-                {user.name}
+              {/* ডাইনামিক ইউজারনেম */}
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-tight uppercase font-mono">
+                {displayName}
               </span>
-              <span className="text-[10px] text-slate-400 font-mono">
+              <span className="text-[10px] text-cyan-500 dark:text-cyan-400 font-mono">
                 Operator Mesh
               </span>
             </div>
@@ -186,31 +188,23 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
           {dropdownOpen && (
             <div className="absolute right-0 mt-2 w-52 sm:w-56 bg-white dark:bg-[#1f2233] border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-xl py-1.5 z-50">
               <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
-                <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 uppercase">
-                  {user.name}
+                <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 uppercase font-mono">
+                  {displayName}
                 </p>
                 <p className="text-[10px] font-mono text-slate-400 truncate">
-                  {user.email || "operator@gateway.mesh"}
+                  {user.email || "node-operator@gateway.mesh"}
                 </p>
               </div>
 
               <div className="py-1">
+                {/* পরিবর্তিত পাথ /security */}
                 <Link
                   href="/settings"
                   onClick={() => setDropdownOpen(false)}
                   className="flex items-center gap-2 px-3 py-2 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                 >
-                  <User className="w-3.5 h-3.5" />
-                  <span>Profile Overview</span>
-                </Link>
-
-                <Link
-                  href="/settings"
-                  onClick={() => setDropdownOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
-                >
-                  <Settings className="w-3.5 h-3.5" />
-                  <span>Security &amp; API Keys</span>
+                  <Shield className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>settings</span>
                 </Link>
               </div>
 
@@ -218,7 +212,7 @@ export default function Topbar({ onToggleSidebar }: TopbarProps) {
                 <button
                   type="button"
                   onClick={handleSignOut}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-left font-medium"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-left font-medium transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   <span>Sign Out</span>

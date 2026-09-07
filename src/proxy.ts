@@ -13,7 +13,7 @@ const protectedRoutes = [
   '/transactions',
   '/token-calculator',
   '/payments',
-  '/settings',
+  '/Security',
 ];
 
 export default function proxy(request: NextRequest) {

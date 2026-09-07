@@ -25,10 +25,28 @@ interface Message {
   content: string;
 }
 
-const AVAILABLE_MODELS = [
-  { id: 'qwen/qwen3.6-27b', name: 'Qwen 3.6 (27B)', tag: 'Ultra-Fast', speed: '450 t/s' },
-  { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 (70B) Versatile', tag: 'High-Reasoning', speed: '280 t/s' },
-  { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 (8B) Instant', tag: 'Micro-Cost', speed: '820 t/s' },
+export const AVAILABLE_MODELS = [
+  {
+    id: 'openai/gpt-oss-20b',
+    name: 'GPT-OSS (20B)',
+    tag: 'Ultra-Fast',
+    speed: '850 t/s',
+    desc: 'Low-latency replacement for Llama 3.1 8B Instant',
+  },
+  {
+    id: 'qwen/qwen3.6-27b',
+    name: 'Qwen 3.6 (27B)',
+    tag: 'High-Reasoning',
+    speed: '480 t/s',
+    desc: 'Advanced reasoning, agentic tool-use & coding',
+  },
+  {
+    id: 'openai/gpt-oss-120b',
+    name: 'GPT-OSS (120B)',
+    tag: 'Flagship',
+    speed: '290 t/s',
+    desc: 'Heavyweight reasoning replacement for Llama 3.3 70B',
+  },
 ];
 
 export default function PlaygroundPage() {
